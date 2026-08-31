@@ -1,0 +1,52 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: resida-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: resida_pro
+      MYSQL_USER: resida
+      MYSQL_PASSWORD: resida123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "resida", "-presida123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    image: php:8.2-apache
+    container_name: resida-app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_NAME: resida_pro
+      DB_USER: resida
+      DB_PASS: resida123
+      DB_CHARSET: utf8mb4
+    command: >
+      bash -c "docker-php-ext-install pdo pdo_mysql mysqli && a2enmod rewrite && apache2-foreground"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: resida-phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: root123
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:
