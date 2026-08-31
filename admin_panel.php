@@ -323,6 +323,18 @@ body.sidebar-hidden .main-content {
         </div>
       </div>
     </div>
+    <?php
+      $subActive = count(array_filter($subs, fn($s)=>$s['status']==='active'));
+      $subPending = count(array_filter($subs, fn($s)=>$s['status']==='pending'));
+      $subPastDue = count(array_filter($subs, fn($s)=>in_array($s['status'],['past_due','expired','cancelled'])));
+      $pendingPayCount = count($pendingPayments ?? []);
+    ?>
+    <div class="row g-4 mb-4">
+      <div class="col-md-3"><div class="stat-card"><div class="stat-icon" style="background:#10b981"><i class="fa-solid fa-circle-check"></i></div><div class="stat-info"><div class="stat-value"><?= $subActive ?></div><div class="stat-label">Aktif Abonelik</div></div></div></div>
+      <div class="col-md-3"><div class="stat-card"><div class="stat-icon" style="background:#f59e0b"><i class="fa-solid fa-clock"></i></div><div class="stat-info"><div class="stat-value"><?= $subPending ?></div><div class="stat-label">Pending (onay bekleyen)</div></div></div></div>
+      <div class="col-md-3"><div class="stat-card"><div class="stat-icon" style="background:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="stat-info"><div class="stat-value"><?= $subPastDue ?></div><div class="stat-label">Past Due / Expired</div></div></div></div>
+      <div class="col-md-3"><div class="stat-card"><div class="stat-icon" style="background:#6366f1"><i class="fa-solid fa-money-bill-transfer"></i></div><div class="stat-info"><div class="stat-value"><?= $pendingPayCount ?></div><div class="stat-label">Bekleyen Ödeme</div><a href="?page=payments" class="small">Onayla →</a></div></div></div>
+    </div>
 
     <div class="row g-4">
       <div class="col-md-6">

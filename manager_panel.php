@@ -431,10 +431,13 @@ body.sidebar-hidden .main-content { margin-left: 0 !important; width: 100% !impo
         <h1>Hoş Geldiniz, <?= htmlspecialchars($user['name']) ?> 👋</h1>
         <p><?= htmlspecialchars($siteName) ?> site yönetim paneli</p>
     </div>
-    <div>
+    <div class="d-flex gap-2 flex-wrap">
         <a href="?export=finance" class="btn btn-success shadow-sm" style="background-color: #10b981; border:none;">
-            <i class="fa-solid fa-file-excel me-2"></i>Kasa Raporunu İndir
+            <i class="fa-solid fa-file-excel me-2"></i>Kasa Raporu (Excel)
         </a>
+        <button onclick="printExpensePDF()" class="btn btn-danger shadow-sm" style="border:none;">
+            <i class="fa-solid fa-file-pdf me-2"></i>Gider PDF
+        </button>
     </div>
 </div>
 <div class="row g-4 mb-4">
@@ -1299,6 +1302,26 @@ const siteName = <?= json_encode($siteName) ?>;
 
       // Tarayıcının kendi yazdırma/PDF ekranını çağır
       window.print();
+  }
+  function printExpensePDF(){
+    const rows = `<?php foreach($expSummary as $es){ echo "<tr><td>".htmlspecialchars($es['category'])."</td><td style=\"text-align:right\">".money($es['total'])." ₺</td></tr>"; } ?>`;
+    const total = `<?= money($expTotal) ?>`;
+    const site = `<?= htmlspecialchars($siteName) ?>`;
+    const year = `<?= $curYear ?>`;
+    const html = `
+      <div style="font-family:Inter,sans-serif;padding:20px;color:#0f172a">
+        <div style="text-align:center;border-bottom:2px solid #e2e8f0;padding-bottom:12px;margin-bottom:16px">
+          <h2 style="margin:0">${site} — Gider Raporu ${year}</h2>
+          <div style="color:#64748b;font-size:10pt">${new Date().toLocaleDateString('tr-TR')} • RESIDA PRO</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:10pt">
+          <thead><tr style="background:#f1f5f9"><th style="text-align:left;padding:8px;border:1px solid #e2e8f0">Kategori</th><th style="text-align:right;padding:8px;border:1px solid #e2e8f0">Tutar</th></tr></thead>
+          <tbody>${rows}<tr style="font-weight:800;background:#f8fafc"><td style="padding:8px;border:1px solid #e2e8f0">Toplam</td><td style="text-align:right;padding:8px;border:1px solid #e2e8f0">${total} ₺</td></tr></tbody>
+        </table>
+        <div style="margin-top:18px;text-align:center;color:#64748b;font-size:9pt">Bu belge RESIDA PRO tarafından oluşturulmuştur.</div>
+      </div>`;
+    document.getElementById('printArea').innerHTML = html;
+    window.print();
   }
 </script>
 </body>
