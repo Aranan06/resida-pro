@@ -6,6 +6,22 @@ if(!$plans){ $plans=[
   ['name'=>'Pro','max_residents'=>0,'price_monthly'=>599,'price_yearly'=>5990,'features'=>'["Sınırsız daire & site","Öncelikli destek","Gelişmiş rapor & PDF","iyzico pazaryeri","Çoklu yönetici","KVKK loglama"]'],
 ]; }
 $stats = ['sites'=>'1.200+','daire'=>'85.000+','tahsilat'=>'%98','destek'=>'7/24'];
+$demoSuccess=''; $demoError='';
+if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['form_type']??'')==='demo_request'){
+  $name=trim($_POST['demo_name']??''); $company=trim($_POST['demo_company']??''); $phone=trim($_POST['demo_phone']??''); $email=trim($_POST['demo_email']??''); $msg=trim($_POST['demo_msg']??'');
+  if(!$name || !$phone || !$email){ $demoError='Ad, telefon ve e-posta zorunlu.'; }
+  elseif(!filter_var($email,FILTER_VALIDATE_EMAIL)){ $demoError='Geçerli e-posta girin.'; }
+  else {
+    $subject="RESIDA Demo Talebi - ". $name . ($company ? " / $company" : "");
+    $body="Ad Soyad: $name\nFirma/Site: $company\nTelefon: $phone\nE-posta: $email\nMesaj: $msg\nTarih: ".date('d.m.Y H:i')."\nIP: ".($_SERVER['REMOTE_ADDR']??'')."\nKaynak: landing.php";
+    $headers="From: noreply@residapro.com\r\nReply-To: $email\r\nContent-Type: text/plain; charset=UTF-8";
+    $sent=@mail('info@residapro.com',$subject,$body,$headers);
+    // yedek log
+    @file_put_contents(__DIR__.'/backups/demo_requests.log', date('Y-m-d H:i:s')." | $name | $company | $phone | $email | ".str_replace("\n"," ",$msg)."\n", FILE_APPEND);
+    if($sent) $demoSuccess='Talebin alındı — en kısa sürede dönüş yapacağız.';
+    else $demoSuccess='Talebin alındı — ekibimiz en kısa sürede arayacak. (info@residapro.com)';
+  }
+}
 ?><!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -92,8 +108,9 @@ body{font-family:Inter,sans-serif;background:#f8fafc;color:#0f172a;overflow-x:hi
         <span class="badge-soft d-inline-flex align-items-center gap-2 mb-3"><i class="fa-solid fa-sparkles"></i> Yeni — iyzico pazaryeri + site IBAN tahsilat</span>
         <h1>Aidat takibini <span>otomatikleştir</span>, tahsilatı garantile</h1>
         <p class="lead mt-3">Blok/Cadde hiyerarşisi, tek tık faiz, dekont onayı, WhatsApp hatırlatma ve sakin mobil API — tek panelde. Para sende toplanmaz, doğrudan <strong>site IBAN'ına</strong> gider.</p>
+        <?php if($demoSuccess): ?><div class="alert alert-success mt-3"><i class="fa-solid fa-check me-1"></i><?= htmlspecialchars($demoSuccess) ?></div><?php endif; ?><?php if($demoError): ?><div class="alert alert-danger mt-3"><?= htmlspecialchars($demoError) ?></div><?php endif; ?>
         <div class="d-flex flex-wrap gap-2 mt-4">
-          <a href="index.php" class="btn btn-primary btn-lg px-4"><i class="fa-solid fa-rocket me-2"></i>Hemen Başla — Ücretsiz</a>
+          <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#demoModal"><i class="fa-solid fa-rocket me-2"></i>Ücretsiz Dene — Talep Formu</button>
           <a href="#pricing" class="btn btn-outline-light btn-lg px-4">Paketleri Gör</a>
           <button id="installBtn" class="btn btn-light btn-lg px-3"><i class="fa-solid fa-download me-1"></i> Uygulamayı Yükle</button>
         </div>
@@ -334,7 +351,7 @@ window.addEventListener('appinstalled',()=>{installBtn.style.display='none';});
           <h3 class="fw-bold mb-2">Bugün kur, bu ay tahsil et</h3>
           <p class="mb-0" style="color:#cbd5e1">Excel’i kapat. 5 dakikada siteyi ekle, aidatı kes, WhatsApp ile hatırlat. İlk ay risksiz dene — memnun kalmazsan iptal et.</p>
           <div class="d-flex gap-2 mt-4 flex-wrap">
-            <a href="index.php" class="btn btn-primary btn-lg px-4"><i class="fa-solid fa-rocket me-1"></i>Ücretsiz Başla</a>
+            <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#demoModal"><i class="fa-solid fa-rocket me-1"></i>Ücretsiz Dene</button>
             <a href="kvkk.php" class="btn btn-outline-light px-4">KVKK’yı İncele</a>
           </div>
           <div class="small mt-3" style="color:#94a3b8"><i class="fa-solid fa-check me-1 text-success"></i>Kredi kartı gerekmez • <i class="fa-solid fa-check ms-2 me-1 text-success"></i>Kurulum desteği • <i class="fa-solid fa-check ms-2 me-1 text-success"></i>Aynı gün aktif</div>
@@ -360,6 +377,7 @@ window.addEventListener('appinstalled',()=>{installBtn.style.display='none';});
   </div>
 </footer>
 
+<div class="modal fade" id="demoModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="form_type" value="demo_request"><div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-paper-plane me-2 text-primary"></i>Ücretsiz Deneme Talebi</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">İsim Soyisim *</label><input type="text" name="demo_name" class="form-control" placeholder="Adınız Soyadınız" required></div><div class="mb-3"><label class="form-label">Firma / Site Adı</label><input type="text" name="demo_company" class="form-control" placeholder="Örn: Güneş Sitesi Yönetimi"></div><div class="row g-3"><div class="col-md-6"><label class="form-label">Telefon *</label><input type="tel" name="demo_phone" class="form-control" placeholder="05xx xxx xx xx" required></div><div class="col-md-6"><label class="form-label">E-posta *</label><input type="email" name="demo_email" class="form-control" placeholder="ornek@mail.com" required></div></div><div class="mb-3 mt-3"><label class="form-label">Mesaj</label><textarea name="demo_msg" class="form-control" rows="3" placeholder="Kaç daire, hangi şehir..."></textarea></div><div class="small text-muted"><i class="fa-solid fa-envelope me-1"></i> Talebiniz <b>info@residapro.com</b> adresine iletilecek.</div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane me-1"></i>Gönder</button></div></form></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.getElementById('billToggle')?.addEventListener('change', function(){
