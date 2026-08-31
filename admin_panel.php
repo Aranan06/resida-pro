@@ -123,6 +123,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     } elseif ($action === 'extend_subscription') {
         $sid=(int)($_POST['subscription_id']??0); $days=(int)($_POST['extend_days']??30);
         if($sid && $days>0){ $pdo->prepare("UPDATE site_subscriptions SET current_period_end=DATE_ADD(current_period_end, INTERVAL ? DAY), status='active', updated_at=NOW() WHERE id=?")->execute([$days,$sid]); $success="Abonelik $days gün uzatıldı."; }
+    } elseif ($action === 'approve_payment') {
+        $pid=(int)($_POST['payment_id']??0);
+        if($pid){ require_once 'includes/PaymentGateway.php'; try{ approvePayment($pdo,$pid,$user['id']); $success='Ödeme onaylandı, abonelik aktif.'; }catch(Exception $e){ $error=$e->getMessage(); } }
+    } elseif ($action === 'reject_payment') {
+        $pid=(int)($_POST['payment_id']??0); $reason=trim($_POST['reason']??'');
+        if($pid){ require_once 'includes/PaymentGateway.php'; rejectPayment($pdo,$pid,$user['id'],$reason); $success='Ödeme reddedildi.'; }
     }
 }
 
@@ -133,6 +139,7 @@ $sites    = $pdo->query("SELECT s.*, (SELECT COUNT(*) FROM users WHERE site_id=s
 $managers = getSiteManagers($pdo);
 try{ $plans=$pdo->query("SELECT * FROM subscription_plans ORDER BY price_monthly")->fetchAll(); }catch(PDOException $e){ $plans=[]; }
 try{ $subs=$pdo->query("SELECT ss.*, s.name as site_name, p.name as plan_name FROM site_subscriptions ss JOIN sites s ON ss.site_id=s.id JOIN subscription_plans p ON ss.plan_id=p.id ORDER BY ss.current_period_end DESC")->fetchAll(); }catch(PDOException $e){ $subs=[]; }
+try{ $pendingPayments=$pdo->query("SELECT p.*, s.name as site_name, pl.name as plan_name, u.name as manager_name FROM payments p LEFT JOIN sites s ON p.site_id=s.id LEFT JOIN site_subscriptions ss ON p.subscription_id=ss.id LEFT JOIN subscription_plans pl ON ss.plan_id=pl.id LEFT JOIN users u ON p.user_id=u.id WHERE p.status='pending' AND p.subscription_id IS NOT NULL ORDER BY p.created_at DESC")->fetchAll(); }catch(PDOException $e){ $pendingPayments=[]; }
 
 // İstatistikler
 $totalSites    = count($sites);
@@ -228,6 +235,9 @@ body.sidebar-hidden .main-content {
     <a href="?page=subscriptions" class="nav-link <?= $page==='subscriptions'?'active':'' ?>">
       <i class="fa-solid fa-credit-card"></i> Abonelikler
     </a>
+    <a href="?page=payments" class="nav-link <?= $page==='payments'?'active':'' ?>">
+      <i class="fa-solid fa-money-bill-transfer"></i> Ödemeler
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -250,8 +260,8 @@ body.sidebar-hidden .main-content {
 
       <span class="topbar-title">
         <?php
-        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler'];
-        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card'];
+        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler','payments'=>'Ödemeler'];
+        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card','payments'=>'money-bill-transfer'];
         echo '<i class="fa-solid fa-'. ($iconMap[$page] ?? 'gauge-high'). ' me-2 text-accent"></i>';
         echo $titles[$page] ?? 'Admin';
         ?>
@@ -640,6 +650,30 @@ body.sidebar-hidden .main-content {
       </tr>
       <?php endforeach; ?>
       <?php if(!$subs): ?><tr><td colspan="5" class="text-center py-4 text-muted">Henüz abonelik yok</td></tr><?php endif; ?>
+    </tbody></table></div></div>
+
+    <?php elseif ($page === 'payments'): ?>
+    <div class="page-header d-flex justify-content-between align-items-start">
+      <div><h1><i class="fa-solid fa-money-bill-transfer me-2 text-warning"></i>Bekleyen Ödemeler</h1><p>Havale ve abonelik ödemeleri — onayla / reddet</p></div>
+      <span class="badge bg-warning text-dark fs-6"><?= count($pendingPayments) ?> bekleyen</span>
+    </div>
+    <div class="card"><div class="card-body p-0"><table class="table mb-0"><thead><tr><th>Site</th><th>Yönetici</th><th>Paket</th><th>Tutar</th><th>Yöntem</th><th>Dekont</th><th>Tarih</th><th class="text-end">İşlem</th></tr></thead><tbody>
+      <?php foreach($pendingPayments as $pp): ?>
+      <tr>
+        <td class="fw-700"><?= htmlspecialchars($pp['site_name'] ?? '-') ?></td>
+        <td class="small"><?= htmlspecialchars($pp['manager_name'] ?? '-') ?></td>
+        <td><?= htmlspecialchars($pp['plan_name'] ?? '-') ?></td>
+        <td class="fw-700"><?= money($pp['amount']) ?> ₺</td>
+        <td><span class="badge bg-secondary"><?= htmlspecialchars($pp['gateway']) ?></span></td>
+        <td><?php if(!empty($pp['receipt_path'])): ?><a href="<?= htmlspecialchars($pp['receipt_path']) ?>" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-file me-1"></i>Gör</a><?php else: ?><span class="text-muted small">—</span><?php endif; ?></td>
+        <td class="small"><?= datetime_tr($pp['created_at']) ?></td>
+        <td class="text-end" style="white-space:nowrap">
+          <form method="post" style="display:inline"><input type="hidden" name="action" value="approve_payment"><input type="hidden" name="payment_id" value="<?= $pp['id'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><button class="btn btn-sm btn-success" onclick="return confirm('Onaylansın mı? Abonelik aktif olacak.')"><i class="fa-solid fa-check me-1"></i>Onayla</button></form>
+          <form method="post" style="display:inline" onsubmit="return confirm('Reddedilsin mi?')"><input type="hidden" name="action" value="reject_payment"><input type="hidden" name="payment_id" value="<?= $pp['id'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="reason" value="Admin reddi"><button class="btn btn-sm btn-danger"><i class="fa-solid fa-xmark"></i></button></form>
+        </td>
+      </tr>
+      <?php endforeach; ?>
+      <?php if(!$pendingPayments): ?><tr><td colspan="8" class="text-center py-4 text-muted">Bekleyen ödeme yok</td></tr><?php endif; ?>
     </tbody></table></div></div>
     <?php endif; ?>
 
