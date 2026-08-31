@@ -301,7 +301,7 @@ window.addEventListener('appinstalled',()=>{installBtn.style.display='none';});
           <div class="small muted price-sub" data-m="Aylık faturalama" data-y="Yıllık peşin — ayda <?= number_format($yearly/12,0,',','.') ?> ₺'ye gelir">Aylık faturalama</div>
         </div>
         <ul class="small muted ps-3 mb-3"><?php foreach($feat as $f): ?><li><?= htmlspecialchars($f) ?></li><?php endforeach; ?></ul>
-        <a href="index.php" class="btn <?= $isFeat?'btn-primary':'btn-outline-primary' ?> w-100"><i class="fa-solid fa-arrow-right me-1"></i>Başla</a>
+        <button class="btn <?= $isFeat?'btn-primary':'btn-outline-primary' ?> w-100" data-bs-toggle="modal" data-bs-target="#demoModal"><i class="fa-solid fa-arrow-right me-1"></i>Başla</button>
         <div class="small muted text-center mt-2"><i class="fa-solid fa-lock me-1"></i> İstediğin zaman iptal</div>
       </div></div>
       <?php endforeach; ?>
