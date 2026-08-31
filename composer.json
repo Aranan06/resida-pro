@@ -3,7 +3,8 @@
   "description": "RESIDA PRO - Site Aidat Yonetimi",
   "require": {
     "php": ">=8.0",
-    "iyzico/iyzipay-php": "^2.0"
+    "iyzico/iyzipay-php": "^2.0",
+    "phpmailer/phpmailer": "^6.9"
   },
   "autoload": {
     "psr-4": {
