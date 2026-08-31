@@ -1,0 +1,4 @@
+DirectoryIndex landing.php index.php
+RewriteEngine On
+# / -> landing.php (SEO icin 302 degil, direkt serve)
+RewriteRule ^$ landing.php [L]
