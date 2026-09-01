@@ -22,10 +22,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($action === 'add_site') {
         $name = trim($_POST['site_name'] ?? '');
         $addr = trim($_POST['site_address'] ?? '');
-        $max_residents = (int)($_POST['max_residents'] ?? 0); // YENİ: Formdan gelen sınırı aldık
+        $max_residents = (int)($_POST['max_residents'] ?? 0);
+        $bank_name = trim($_POST['bank_name'] ?? '');
+        $iban = trim($_POST['iban'] ?? '');
+        $iban_holder = trim($_POST['iban_holder'] ?? '');
         if ($name) {
-            // Sorguya max_residents sütununu ekledik
-            $pdo->prepare("INSERT INTO sites (name, address, created_by, max_residents) VALUES (?,?,?,?)")->execute([$name, $addr, $user['id'], $max_residents]);
+            $pdo->prepare("INSERT INTO sites (name, address, created_by, max_residents, bank_name, iban, iban_holder) VALUES (?,?,?,?,?,?,?)")
+                ->execute([$name, $addr, $user['id'], $max_residents, $bank_name, $iban, $iban_holder]);
             $success = "\"$name\" sitesi başarıyla eklendi.";
         } else { $error = 'Site adı zorunludur.'; }
 
@@ -34,10 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $id   = (int)$_POST['site_id'];
         $name = trim($_POST['site_name'] ?? '');
         $addr = trim($_POST['site_address'] ?? '');
-        $max_residents = (int)($_POST['max_residents'] ?? 0); // YENİ: Formdan gelen sınırı aldık
+        $max_residents = (int)($_POST['max_residents'] ?? 0);
+        $bank_name = trim($_POST['bank_name'] ?? '');
+        $iban = trim($_POST['iban'] ?? '');
+        $iban_holder = trim($_POST['iban_holder'] ?? '');
         if ($id && $name) {
-            // Sorguyu güncelledik: max_residents=? eklendi
-            $pdo->prepare("UPDATE sites SET name=?, address=?, max_residents=? WHERE id=?")->execute([$name, $addr, $max_residents, $id]);
+            $pdo->prepare("UPDATE sites SET name=?, address=?, max_residents=?, bank_name=?, iban=?, iban_holder=? WHERE id=?")
+                ->execute([$name, $addr, $max_residents, $bank_name, $iban, $iban_holder, $id]);
             $success = 'Site bilgileri güncellendi.';
         } else { $error = 'Site adı boş olamaz.'; }
     // Site Sil
@@ -448,23 +454,40 @@ body.sidebar-hidden .main-content {
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                       </div>
                       
-                      <div class="modal-body">
-                        <div class="mb-3">
-                          <label class="form-label">Site Adı <span class="text-danger">*</span></label>
-                          <input type="text" name="site_name" class="form-control" value="<?= htmlspecialchars($s['name'] ?? '') ?>" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                          <label class="form-label">Adres</label>
-                          <input type="text" name="site_address" class="form-control" value="<?= htmlspecialchars($s['address'] ?? '') ?>">
-                        </div>
-                        
-                        <div class="mb-3">
-                          <label class="form-label">Maksimum Daire Sakini Sınırı</label>
-                          <input type="number" name="max_residents" class="form-control" min="0" value="<?= htmlspecialchars($s['max_residents'] ?? 0) ?>">
-                          <small class="text-muted">Sınır koymak istemiyorsanız 0 bırakın.</small>
-                        </div>
-                      </div>
+<div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Site Adı <span class="text-danger">*</span></label>
+            <input type="text" name="site_name" class="form-control" value="<?= htmlspecialchars($s['name'] ?? '') ?>" required>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Adres</label>
+            <input type="text" name="site_address" class="form-control" value="<?= htmlspecialchars($s['address'] ?? '') ?>">
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Maksimum Daire Sakini Sınırı</label>
+            <input type="number" name="max_residents" class="form-control" min="0" value="<?= htmlspecialchars($s['max_residents'] ?? 0) ?>">
+            <small class="text-muted">Sınır koymak istemiyorsanız 0 bırakın.</small>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Banka Adı</label>
+            <input type="text" name="bank_name" class="form-control" value="<?= htmlspecialchars($s['bank_name'] ?? '') ?>" placeholder="Örn: Ziraat Bankası">
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">IBAN</label>
+            <input type="text" name="iban" class="form-control" value="<?= htmlspecialchars($s['iban'] ?? '') ?>" placeholder="TR00 0000 0000 0000 0000 0000 00">
+            <small class="text-muted">Sakinlerin ödeme yapacağı site IBAN'ı</small>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Hesap Sahibi</label>
+            <input type="text" name="iban_holder" class="form-control" value="<?= htmlspecialchars($s['iban_holder'] ?? '') ?>" placeholder="Site Yönetimi / Site Adı">
+            <small class="text-muted">IBAN hesap sahibi adı</small>
+          </div>
+        </div>
                       
                       <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
@@ -708,14 +731,33 @@ body.sidebar-hidden .main-content {
             <label class="form-label">Site Adı <span class="text-danger">*</span></label>
             <input type="text" name="site_name" class="form-control" placeholder="Örn: Güneş Evleri Sitesi" required>
           </div>
+          
           <div class="mb-3">
             <label class="form-label">Adres</label>
-            <div class="mb-3">
-  <label class="form-label">Maksimum Daire Sakini Sınırı</label>
-  <input type="number" name="max_residents" class="form-control" min="0" value="0">
-  <small class="text-muted">Sınır koymak istemiyorsanız 0 bırakın.</small>
-</div>
             <input type="text" name="site_address" class="form-control" placeholder="Mahalle, ilçe, şehir...">
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Maksimum Daire Sakini Sınırı</label>
+            <input type="number" name="max_residents" class="form-control" min="0" value="0">
+            <small class="text-muted">Sınır koymak istemiyorsanız 0 bırakın.</small>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Banka Adı</label>
+            <input type="text" name="bank_name" class="form-control" placeholder="Örn: Ziraat Bankası">
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">IBAN</label>
+            <input type="text" name="iban" class="form-control" placeholder="TR00 0000 0000 0000 0000 0000 00">
+            <small class="text-muted">Sakinlerin ödeme yapacağı site IBAN'ı</small>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Hesap Sahibi</label>
+            <input type="text" name="iban_holder" class="form-control" placeholder="Site Yönetimi / Site Adı">
+            <small class="text-muted">IBAN hesap sahibi adı</small>
           </div>
         </div>
         <div class="modal-footer">
