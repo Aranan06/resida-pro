@@ -226,11 +226,16 @@ const flagOriginEl=document.getElementById('flagOrigin');
 const copyBtn=document.getElementById('copyOrigin');
 if(flagOriginEl) flagOriginEl.textContent = location.origin;
 if(copyBtn) copyBtn.addEventListener('click',()=>{ const o=location.origin; navigator.clipboard?.writeText(o); copyBtn.innerHTML='<i class="fa-solid fa-check me-1"></i> Kopyalandı'; setTimeout(()=>copyBtn.innerHTML='<i class="fa-solid fa-copy me-1"></i> Adresi kopyala',1500); });
+const isWindows = /Win/.test(navigator.platform) || /Windows/.test(navigator.userAgent);
 installBtn.addEventListener('click',async()=>{
   if(deferredPrompt){ deferredPrompt.prompt(); const c=await deferredPrompt.userChoice; deferredPrompt=null; if(c.outcome==='accepted') installBtn.style.display='none'; return; }
   if(isIos){ iosHint.style.display='block'; iosHint.scrollIntoView({behavior:'smooth',block:'center'}); return; }
   if(isInsecure && insecureHint){ insecureHint.style.display='block'; insecureHint.scrollIntoView({behavior:'smooth',block:'center'}); return; }
-  alert('Android Chrome: sağ üst ⋮ → "Uygulamayı yükle" veya "Ana ekrana ekle"ye dokunun.\n\nNot: http://192.168.x.x ile rozet görünebilir, canlı https:// olduğunda uygulama gibi (adressesiz) açılır.');
+  if(isWindows){
+    alert('Windows Chrome/Edge: adres çubuğu sağındaki "Yükle" ikonuna veya sağ üst ⋮ → "Uygulamayı yükle / Install app"e tıklayın.\n\nMasaüstüne RESIDA kısayolu oluşur, pencere gibi açılır.');
+  } else {
+    alert('Android Chrome: sağ üst ⋮ → "Uygulamayı yükle" veya "Ana ekrana ekle"ye dokunun.\n\nNot: http://192.168.x.x ile rozet görünebilir, canlı https:// olduğunda uygulama gibi (adressesiz) açılır.');
+  }
 });
 window.addEventListener('appinstalled',()=>{installBtn.style.display='none';});
 </script>
