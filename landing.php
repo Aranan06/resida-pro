@@ -50,6 +50,10 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['form_type']??'')==='demo_requ
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RESIDA PRO – Apartman & Site Aidat Yönetimi | Blok, Faiz, Dekont, iyzico</title>
 <meta name="description" content="Apartman ve site aidatını tek panelde yönet: blok hiyerarşisi, otomatik faiz, site IBAN'ına tahsilat, dekont onayı, WhatsApp hatırlatma ve mobil API.">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/img/icon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
