@@ -1,5 +1,5 @@
 // service-worker.js – RESIDA PRO PWA (cache-first, offline + push)
-const CACHE = 'resida-v7';
+const CACHE = 'resida-v8';
 const ASSETS = [
   'index.php',
   'landing.php',
@@ -8,6 +8,8 @@ const ASSETS = [
   'assets/img/resida-pro-logo.png',
   'assets/img/resida-pro-logo2.png',
   'assets/img/resida-pro-logoph.png',
+  'assets/img/icon-96.png',
+  'assets/img/icon-144.png',
   'assets/img/icon-192.png',
   'assets/img/icon-512.png',
   'assets/img/apple-touch-icon.png'
@@ -39,8 +41,8 @@ self.addEventListener('push', e => {
   try { data = e.data.json(); } catch(err){ if(e.data) data.body = e.data.text(); }
   e.waitUntil(self.registration.showNotification(data.title || 'RESIDA', {
     body: data.body || '',
-    icon: 'assets/img/resida-pro-logo.png',
-    badge: 'assets/img/resida-pro-logo.png',
+    icon: 'assets/img/icon-192.png',
+    badge: 'assets/img/icon-96.png',
     data: {url: data.url || 'resident_panel.php'}
   }));
 });

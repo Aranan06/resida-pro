@@ -7,7 +7,20 @@
   "background_color": "#0f172a",
   "theme_color": "#1e3a8a",
   "orientation": "portrait",
+  "scope": "/",
   "icons": [
+    {
+      "src": "assets/img/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/img/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "assets/img/icon-192.png",
       "sizes": "192x192",
@@ -26,5 +39,30 @@
       "type": "image/png",
       "purpose": "any"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Sakinler",
+      "short_name": "Sakinler",
+      "description": "Daire sakinlerini yönet",
+      "url": "dashboard.php?page=residents",
+      "icons": [{ "src": "assets/img/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Aidatlar",
+      "short_name": "Aidatlar",
+      "description": "Aidat yönetimi",
+      "url": "dashboard.php?page=dues",
+      "icons": [{ "src": "assets/img/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ödemeler",
+      "short_name": "Ödemeler",
+      "description": "Bekleyen ödemeleri onayla",
+      "url": "dashboard.php?page=payments",
+      "icons": [{ "src": "assets/img/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [],
+  "categories": ["business", "productivity", "finance"]
 }

@@ -604,6 +604,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="tab-content">
     <div class="tab-pane fade show active" id="info<?= $r['id'] ?>">
       <form method="post">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
         <input type="hidden" name="action" value="edit_resident">
         <input type="hidden" name="user_id" value="<?= $r['id'] ?>">
         <div class="row g-3">
@@ -623,6 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
       </form>
       <hr class="divider my-3">
       <form method="post" onsubmit="return confirm('Bu sakini silmek istediğinize emin misiniz?')">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
         <input type="hidden" name="action" value="delete_resident"><input type="hidden" name="user_id" value="<?= $r['id'] ?>">
         <button class="btn btn-sm btn-danger"><i class="fa-solid fa-trash me-1"></i>Sakini Sil</button>
       </form>
@@ -828,7 +830,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Kaydet</button></div>
 </form></div></div></div>
 
-<div class="modal fade" id="addDueModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="add_due">
+<div class="modal fade" id="addDueModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="add_due">
 <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-coins me-2 text-warning"></i>Aidat Ekle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body"><div class="row g-3">
   <div class="col-12"><label class="form-label">Sakin *</label><select name="resident_id" class="form-select" required><option value="">Seçin</option><?php foreach($residents as $r): ?><option value="<?=$r['id']?>"><?=htmlspecialchars($r['name'])?> (Daire <?=$r['apartment_no']?>)</option><?php endforeach; ?></select></div>
@@ -839,7 +841,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Ekle</button></div>
 </form></div></div></div>
 
-<div class="modal fade" id="dueSettingModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="save_due_setting">
+<div class="modal fade" id="dueSettingModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="save_due_setting">
 <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-gear me-2"></i>Yıllık Aidat Ücreti</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body"><div class="row g-3">
   <div class="col-md-6"><label class="form-label">Yıl</label><select name="year" class="form-select"><?php for($y=$curYear+1;$y>=$curYear-1;$y--): ?><option value="<?=$y?>" <?=$y==$curYear?'selected':''?>><?=$y?></option><?php endfor; ?></select></div>
@@ -852,6 +854,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
         <input type="hidden" name="action" value="bulk_create_dues">
         <div class="modal-header">
           <h5 class="modal-title"><i class="fa-solid fa-layer-group me-2 text-warning"></i>Toplu Aidat / Demirbaş Yansıt</h5>
@@ -915,6 +918,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
         <input type="hidden" name="action" value="add_expense">
         <div class="modal-header">
           <h5 class="modal-title"><i class="fa-solid fa-receipt me-2 text-warning"></i>Gider Ekle</h5>
@@ -1021,13 +1025,13 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
-<div class="modal fade" id="addAnnModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="add_announcement">
+<div class="modal fade" id="addAnnModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="add_announcement">
 <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-bullhorn me-2 text-accent"></i>Yeni Duyuru</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body"><div class="mb-3"><label class="form-label">Başlık *</label><input type="text" name="title" class="form-control" required></div><div class="mb-3"><label class="form-label">İçerik *</label><textarea name="content" rows="4" class="form-control" required></textarea></div></div>
 <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Yayınla</button></div>
 </form></div></div></div>
 
-<div class="modal fade" id="addEventModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="add_event">
+<div class="modal fade" id="addEventModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="add_event">
 <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-calendar-days me-2 text-cyan"></i>Yeni Etkinlik</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body"><div class="mb-3"><label class="form-label">Başlık *</label><input type="text" name="title" class="form-control" required></div><div class="mb-3"><label class="form-label">Tarih *</label><input type="datetime-local" name="event_date" class="form-control" required></div><div class="mb-3"><label class="form-label">Açıklama</label><textarea name="description" rows="2" class="form-control"></textarea></div></div>
 <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Ekle</button></div>
