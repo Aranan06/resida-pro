@@ -5,7 +5,6 @@ if(!$plans){ $plans=[
   ['name'=>'Standart','max_residents'=>100,'price_monthly'=>349,'price_yearly'=>3490,'features'=>'["100 daireye kadar","Otomatik aidat oluşturma","Gider ve kasa takibi","Otomatik gecikme faizi","Blok ve cadde yapısı","Sakin mobil paneli"]'],
   ['name'=>'Pro','max_residents'=>0,'price_monthly'=>599,'price_yearly'=>5990,'features'=>'["Sınırsız daire ve site","Öncelikli destek","Gelişmiş raporlar","Kartla ödeme","Çoklu yönetici","KVKK uyumlu kayıtlar"]'],
 ]; }
-$stats = ['sites'=>'1.200+','daire'=>'85.000+','tahsilat'=>'%98'];
 $demoSuccess=''; $demoError='';
 if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['form_type']??'')==='demo_request'){
   $name=trim($_POST['demo_name']??''); $company=trim($_POST['demo_company']??''); $phone=trim($_POST['demo_phone']??''); $email=trim($_POST['demo_email']??''); $msg=trim($_POST['demo_msg']??'');
@@ -274,7 +273,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
   <div class="container">
     <div class="text-center mb-4">
       <h2 class="section-title">Gerçek yöneticiler anlatıyor</h2>
-      <p class="muted">1.200+ site • 85.000+ daire • %98 zamanında tahsilat</p>
+      <p class="muted">Apartman ve site yöneticilerinin günlük işini kolaylaştırır</p>
     </div>
     <div class="row g-3">
       <div class="col-md-4"><div class="card-soft p-4 h-100"><div class="small">“Excel'den 3 saat süren iş 4 dakikaya indi. Faiz ve dekont onayı hayat kurtardı.”</div><div class="small fw-bold mt-3">A Blok Yöneticisi</div><div class="small muted">64 daire • Ankara</div></div></div>
