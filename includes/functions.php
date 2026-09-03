@@ -161,6 +161,27 @@ function money($v) { return number_format($v, 2, ',', '.'); }
 function date_tr($d) { return $d ? date('d.m.Y', strtotime($d)) : '-'; }
 function datetime_tr($d) { return $d ? date('d.m.Y H:i', strtotime($d)) : '-'; }
 function avatarLetter($name) { return mb_strtoupper(mb_substr(trim($name), 0, 1, 'UTF-8'), 'UTF-8'); }
+// --- LANDING CMS ---
+function landing_settings_all($pdo) {
+    static $cache = null;
+    if ($cache !== null) return $cache;
+    $cache = [];
+    try { foreach ($pdo->query("SELECT k, v FROM landing_settings") as $r) { $cache[$r['k']] = $r['v']; } }
+    catch (Exception $e) { /* tablo yoksa sessiz gec */ }
+    return $cache;
+}
+function landing_setting($pdo, $key, $default = '') {
+    $all = landing_settings_all($pdo);
+    return (isset($all[$key]) && $all[$key] !== '' && $all[$key] !== null) ? $all[$key] : $default;
+}
+function landing_menus($pdo) {
+    try { return $pdo->query("SELECT * FROM landing_menu WHERE is_active=1 ORDER BY sort_order, id")->fetchAll(); }
+    catch (Exception $e) { return []; }
+}
+function landing_faqs($pdo) {
+    try { return $pdo->query("SELECT * FROM landing_faq WHERE is_active=1 ORDER BY sort_order, id")->fetchAll(); }
+    catch (Exception $e) { return []; }
+}
 // --- GÜVENLİK FONKSİYONLARI ---
 
 // 1. CSRF Token Üret ve Doğrula

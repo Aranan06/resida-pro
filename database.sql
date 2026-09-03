@@ -250,3 +250,77 @@ INSERT IGNORE INTO subscription_plans (id, name, max_residents, max_sites, price
 -- Varsayılan admin kullanıcısı (şifre: password - İLK GİRİŞTE DEĞİŞTİRİN!)
 INSERT IGNORE INTO users (username, password, role, name)
 VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'Sistem Yöneticisi');
+-- Landing CMS (site içeriği admin panelden yönetilir)
+CREATE TABLE IF NOT EXISTS landing_settings (
+    k VARCHAR(100) PRIMARY KEY,
+    v TEXT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS landing_menu (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    label VARCHAR(100) NOT NULL,
+    url VARCHAR(255) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS landing_faq (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question VARCHAR(255) NOT NULL,
+    answer TEXT NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- Landing varsayılan içerik
+INSERT IGNORE INTO landing_settings (k, v) VALUES
+(''hero_badge'', ''5 saniyede anla — Excel''''i kapat''),
+(''hero_title_a'', ''Apartman ve site yönetimini''),
+(''hero_title_b'', ''Excel''''den kurtarın.''),
+(''hero_subtitle'', ''Aidat, gider, tahsilat ve sakin yönetimini tek panelden yönetin. Apartman yönetim programı arayan yöneticiler için sade, hızlı ve güvenilir çözüm.''),
+(''hero_primary_btn'', ''Ücretsiz Başlayın''),
+(''hero_secondary_btn'', ''İncele''),
+(''hero_note'', ''Kredi kartı gerekmez • 10 dakikada kurulum • Aynı gün tahsilat''),
+(''problem_title'', ''Excel, WhatsApp ve banka dekontları arasında kaybolmayın.''),
+(''problem_subtitle'', ''Site yönetim programı kullanmayan yöneticiler her ay aynı sorunlarla uğraşıyor.''),
+(''solution_title'', ''Yönetmeniz gereken her şey tek panelde.''),
+(''solution_subtitle'', ''Aidat takip programı olarak günlük işlerinizi sadeleştirir.''),
+(''payment_title'', ''Ödeme RESIDA''''da tutulmaz.''),
+(''payment_text'', ''Sakin kartla ödeme yaptığında para doğrudan sitenin belirlediği banka hesabına yönlendirilir. Para bizim hesabımızda beklemez.''),
+(''migration_title'', ''Excel''''den RESIDA''''ya geçmek düşündüğünüzden kolay.''),
+(''migration_subtitle'', ''Yıllardır kullandığınız verileri kaybetmeden RESIDA''''ya geçin.''),
+(''screens_title'', ''Aidatları, sakinleri ve raporları tek ekrandan yönetin.''),
+(''screens_subtitle'', ''Modern SaaS tasarımıyla hazırlanmış yönetici paneli.''),
+(''screens_side_title'', ''Sakinler de her şeyi telefonundan takip etsin.''),
+(''screens_side_text'', ''Sakinler aidat borçlarını, ödemelerini, dekontlarını ve site duyurularını tek yerden takip edebilir.''),
+(''pricing_title'', ''Size uygun paketi seçin''),
+(''pricing_subtitle'', ''Mevcut fiyatlandırma korunur. İstediğiniz zaman yükseltebilirsiniz.''),
+(''pricing_note'', ''Mini küçük apartmanlar • Standart orta büyüklükte siteler • Pro profesyonel site yönetimleri içindir.''),
+(''faq_title'', ''Sık sorulan sorular''),
+(''faq_subtitle'', ''Apartman yönetim programı hakkında merak edilenler.''),
+(''cta_title'', ''Site yönetimini bugün kolaylaştırın.''),
+(''cta_text'', ''Aidat, gider, tahsilat ve sakin yönetimini RESIDA ile tek panelden yönetin.''),
+(''cta_primary_btn'', ''Ücretsiz Başlayın''),
+(''cta_box_title'', ''15 dakikada canlı tanıtım''),
+(''contact_email'', ''info@residapro.com''),
+(''contact_phone'', ''0532 XXX XX XX''),
+(''footer_text'', ''RESIDA PRO • Apartman ve site yönetim programı''),
+(''nav_logo'', ''assets/img/resida-pro-logo2.png''),
+(''hero_image'', '''');
+INSERT IGNORE INTO landing_menu (id, label, url, sort_order, is_active) VALUES
+(1, ''Çözüm'', ''#cozum'', 1, 1),
+(2, ''Ödeme'', ''#odeme'', 2, 1),
+(3, ''Ekranlar'', ''#ekranlar'', 3, 1),
+(4, ''Fiyatlar'', ''#fiyatlar'', 4, 1),
+(5, ''SSS'', ''#sss'', 5, 1);
+INSERT IGNORE INTO landing_faq (id, question, answer, sort_order, is_active) VALUES
+(1, ''RESIDA nedir?'', ''RESIDA, apartman ve siteler için aidat takip programıdır. Aidat, gider, tahsilat, dekont, duyuru ve sakin yönetimini tek panelde toplar.'', 1, 1),
+(2, ''RESIDA ile ödeme nasıl alınır?'', ''Sakin havale yapıp dekont yükler, yönetici tek dokunuşla onaylar. Kartla ödemede tutar doğrudan site hesabına yönlendirilir.'', 2, 1),
+(3, ''Para RESIDA''''da tutuluyor mu?'', ''Hayır. Ödeme RESIDA''''da tutulmaz. Para doğrudan sitenin belirlediği banka hesabına gider.'', 3, 1),
+(4, ''Site IBAN''''ı nasıl tanımlanıyor?'', ''Yönetici panelinden siteye ait banka adı, IBAN ve hesap sahibi bir kez tanımlanır. Tüm ödemeler bu hesaba yönlendirilir.'', 4, 1),
+(5, ''Excel''''deki bilgiler RESIDA''''ya aktarılabilir mi?'', ''Evet. Daire ve sakin listenizi mevcut Excel dosyanızdan alıp kısa sürede RESIDA''''ya aktarabilirsiniz.'', 5, 1),
+(6, ''Sakinler sisteme nasıl giriş yapıyor?'', ''Her sakine kullanıcı adı ve şifre oluşturulur. Sakinler borç, ödeme, dekont ve duyuruları kendi panelinden görür.'', 6, 1),
+(7, ''Mobil uygulama var mı?'', ''Evet. Telefon ve tabletten uyumlu sakin paneli bulunur. Ana ekrana ekleyerek uygulama gibi kullanabilirsiniz.'', 7, 1),
+(8, ''İptal edebilir miyim?'', ''Evet. İstediğiniz zaman iptal edebilirsiniz. Verileriniz yedeklenebilir.'', 8, 1),
+(9, ''Verilerim güvende mi?'', ''Evet. KVKK uyumlu altyapı, güvenli giriş, yetkilendirme ve düzenli yedekleme kullanılır.'', 9, 1),
+(10, ''Gecikme faizi otomatik hesaplanıyor mu?'', ''Evet. Yönetici oran ve süre tanımladıktan sonra gecikme faizi otomatik hesaplanır ve rapora yansır.'', 10, 1);

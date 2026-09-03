@@ -135,6 +135,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     } elseif ($action === 'reject_payment') {
         $pid=(int)($_POST['payment_id']??0); $reason=trim($_POST['reason']??'');
         if($pid){ require_once 'includes/PaymentGateway.php'; rejectPayment($pdo,$pid,$user['id'],$reason); $success='Ödeme reddedildi.'; }
+    } elseif ($action === 'landing_save_settings') {
+        foreach(($_POST['settings']??[]) as $k=>$v){
+            $k=preg_replace('/[^a-z0-9_]/','',strtolower(trim($k))); if($k==='') continue;
+            $pdo->prepare("INSERT INTO landing_settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)")->execute([$k, is_string($v)?trim($v):$v]);
+        }
+        $upDir=__DIR__.'/assets/img/landing'; if(!is_dir($upDir)) mkdir($upDir,0777,true);
+        foreach(['nav_logo','hero_image'] as $f){
+            if(!empty($_FILES[$f]['tmp_name']) && empty($_FILES[$f]['error'])){
+                $ext=strtolower(pathinfo($_FILES[$f]['name'],PATHINFO_EXTENSION));
+                if(in_array($ext,['jpg','jpeg','png','webp']) && $_FILES[$f]['size']<=2*1024*1024){
+                    foreach(glob($upDir.'/'.$f.'.*') as $old) @unlink($old);
+                    $dest=$upDir.'/'.$f.'.'.$ext;
+                    if(move_uploaded_file($_FILES[$f]['tmp_name'],$dest)){
+                        $pdo->prepare("INSERT INTO landing_settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)")->execute([$f,'assets/img/landing/'.$f.'.'.$ext]);
+                    }
+                } else { $error='Görsel JPG/PNG/WEBP ve en fazla 2MB olmalı.'; }
+            }
+        }
+        if(!$error) $success='Site içeriği güncellendi.';
+    } elseif ($action === 'landing_menu_add') {
+        $lb=trim($_POST['label']??''); $url=trim($_POST['url']??''); $so=(int)($_POST['sort_order']??0);
+        if($lb&&$url){ $pdo->prepare("INSERT INTO landing_menu (label,url,sort_order,is_active) VALUES (?,?,?,1)")->execute([$lb,$url,$so]); $success='Menü eklendi.'; } else $error='Menü adı ve bağlantı zorunlu.';
+    } elseif ($action === 'landing_menu_edit') {
+        $id=(int)($_POST['menu_id']??0); $lb=trim($_POST['label']??''); $url=trim($_POST['url']??''); $so=(int)($_POST['sort_order']??0);
+        if($id&&$lb&&$url){ $pdo->prepare("UPDATE landing_menu SET label=?,url=?,sort_order=? WHERE id=?")->execute([$lb,$url,$so,$id]); $success='Menü güncellendi.'; }
+    } elseif ($action === 'landing_menu_delete') {
+        $pdo->prepare("DELETE FROM landing_menu WHERE id=?")->execute([(int)($_POST['menu_id']??0)]); $success='Menü silindi.';
+    } elseif ($action === 'landing_menu_toggle') {
+        $pdo->prepare("UPDATE landing_menu SET is_active=1-is_active WHERE id=?")->execute([(int)($_POST['menu_id']??0)]); $success='Menü durumu değişti.';
+    } elseif ($action === 'landing_faq_add') {
+        $q=trim($_POST['question']??''); $a=trim($_POST['answer']??''); $so=(int)($_POST['sort_order']??0);
+        if($q&&$a){ $pdo->prepare("INSERT INTO landing_faq (question,answer,sort_order,is_active) VALUES (?,?,?,1)")->execute([$q,$a,$so]); $success='SSS eklendi.'; } else $error='Soru ve cevap zorunlu.';
+    } elseif ($action === 'landing_faq_edit') {
+        $id=(int)($_POST['faq_id']??0); $q=trim($_POST['question']??''); $a=trim($_POST['answer']??''); $so=(int)($_POST['sort_order']??0);
+        if($id&&$q&&$a){ $pdo->prepare("UPDATE landing_faq SET question=?,answer=?,sort_order=? WHERE id=?")->execute([$q,$a,$so,$id]); $success='SSS güncellendi.'; }
+    } elseif ($action === 'landing_faq_delete') {
+        $pdo->prepare("DELETE FROM landing_faq WHERE id=?")->execute([(int)($_POST['faq_id']??0)]); $success='SSS silindi.';
+    } elseif ($action === 'landing_faq_toggle') {
+        $pdo->prepare("UPDATE landing_faq SET is_active=1-is_active WHERE id=?")->execute([(int)($_POST['faq_id']??0)]); $success='SSS durumu değişti.';
     }
 }
 
@@ -148,6 +187,9 @@ try{ $subs=$pdo->query("SELECT ss.*, s.name as site_name, p.name as plan_name FR
 try{ $pendingPayments=$pdo->query("SELECT p.*, s.name as site_name, pl.name as plan_name, u.name as manager_name FROM payments p LEFT JOIN sites s ON p.site_id=s.id LEFT JOIN site_subscriptions ss ON p.subscription_id=ss.id LEFT JOIN subscription_plans pl ON ss.plan_id=pl.id LEFT JOIN users u ON p.user_id=u.id WHERE p.status='pending' AND p.subscription_id IS NOT NULL ORDER BY p.created_at DESC")->fetchAll(); }catch(PDOException $e){ $pendingPayments=[]; }
 $demoLeads=[]; $leadLog=__DIR__.'/backups/demo_requests.log';
 if(is_file($leadLog)){ $lines=array_filter(array_map('trim',file($leadLog))); foreach(array_reverse($lines) as $ln){ $p=array_map('trim',explode('|',$ln)); $demoLeads[]=['date'=>$p[0]??'','name'=>$p[1]??'','company'=>$p[2]??'','phone'=>$p[3]??'','email'=>$p[4]??'','msg'=>implode(' | ',array_slice($p,5))]; } }
+$LS=landing_settings_all($pdo);
+try{ $allLandingMenus=$pdo->query("SELECT * FROM landing_menu ORDER BY sort_order,id")->fetchAll(); }catch(PDOException $e){ $allLandingMenus=[]; }
+try{ $allLandingFaqs=$pdo->query("SELECT * FROM landing_faq ORDER BY sort_order,id")->fetchAll(); }catch(PDOException $e){ $allLandingFaqs=[]; }
 
 // İstatistikler
 $totalSites    = count($sites);
@@ -250,6 +292,10 @@ body.sidebar-hidden .main-content {
       <i class="fa-solid fa-envelope-open-text"></i> Demo Talepleri
       <?php if(!empty($demoLeads)): ?><span class="ms-auto badge" style="background:rgba(245,158,11,.2);color:#fcd34d;font-size:.68rem;"><?= count($demoLeads) ?></span><?php endif; ?>
     </a>
+    <div class="sidebar-section">Site</div>
+    <a href="?page=landing" class="nav-link <?= $page==='landing'?'active':'' ?>">
+      <i class="fa-solid fa-globe"></i> Site İçeriği
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -272,8 +318,8 @@ body.sidebar-hidden .main-content {
 
       <span class="topbar-title">
         <?php
-        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler','payments'=>'Ödemeler','leads'=>'Demo Talepleri'];
-        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card','payments'=>'money-bill-transfer','leads'=>'envelope-open-text'];
+        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler','payments'=>'Ödemeler','leads'=>'Demo Talepleri','landing'=>'Site İçeriği'];
+        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card','payments'=>'money-bill-transfer','leads'=>'envelope-open-text','landing'=>'globe'];
         echo '<i class="fa-solid fa-'. ($iconMap[$page] ?? 'gauge-high'). ' me-2 text-accent"></i>';
         echo $titles[$page] ?? 'Admin';
         ?>
@@ -735,6 +781,96 @@ body.sidebar-hidden .main-content {
       <?php endforeach; ?>
       <?php if(!$demoLeads): ?><tr><td colspan="6" class="text-center py-4 text-muted">Henüz talep yok</td></tr><?php endif; ?>
     </tbody></table></div></div>
+    <?php endif; ?>
+
+    <?php elseif ($page === 'landing'): ?>
+    <div class="page-header">
+      <div><h1><i class="fa-solid fa-globe me-2 text-accent"></i>Site İçeriği</h1><p>Landing sayfası yazıları, üst menü, SSS ve görseller — <a href="landing.php" target="_blank">siteyi görüntüle</a></p></div>
+    </div>
+    <?php
+    $landingFields=[
+      'Üst Menü ve İletişim'=>['contact_email'=>'E-posta','contact_phone'=>'Telefon','footer_text'=>'Alt bilgi yazısı'],
+      'Hero (ilk ekran)'=>['hero_badge'=>'Rozet yazısı','hero_title_a'=>'Başlık 1. satır','hero_title_b'=>'Başlık 2. satır (renkli)','hero_subtitle'=>'Alt açıklama|textarea','hero_primary_btn'=>'Birincil buton','hero_secondary_btn'=>'İkincil buton','hero_note'=>'Alt not'],
+      'Bölüm Başlıkları'=>['problem_title'=>'Problem başlığı','problem_subtitle'=>'Problem alt yazı|textarea','solution_title'=>'Çözüm başlığı','solution_subtitle'=>'Çözüm alt yazı|textarea','payment_title'=>'Ödeme başlığı','payment_text'=>'Ödeme açıklaması|textarea','migration_title'=>'Geçiş başlığı','migration_subtitle'=>'Geçiş alt yazı|textarea'],
+      'Ekranlar ve Fiyatlar'=>['screens_title'=>'Ekranlar başlığı','screens_subtitle'=>'Ekranlar alt yazı|textarea','screens_side_title'=>'Telefon kutusu başlığı','screens_side_text'=>'Telefon kutusu yazı|textarea','pricing_title'=>'Fiyat başlığı','pricing_subtitle'=>'Fiyat alt yazı|textarea','pricing_note'=>'Fiyat alt notu'],
+      'SSS ve Çağrı'=>['faq_title'=>'SSS başlığı','faq_subtitle'=>'SSS alt yazı|textarea','cta_title'=>'Alt çağrı başlığı','cta_text'=>'Alt çağrı yazı|textarea','cta_primary_btn'=>'Alt çağrı butonu'],
+    ];
+    ?>
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="action" value="landing_save_settings">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+      <?php foreach($landingFields as $group=>$fields): ?>
+      <div class="card mb-3"><div class="card-header fw-700"><?= htmlspecialchars($group) ?></div><div class="card-body"><div class="row g-3">
+        <?php foreach($fields as $k=>$lbl): $isTa=strpos($lbl,'|textarea')!==false; $lbl=str_replace('|textarea','',$lbl); ?>
+        <div class="col-md-6"><label class="form-label"><?= htmlspecialchars($lbl) ?></label>
+          <?php if($isTa): ?><textarea name="settings[<?= $k ?>]" class="form-control" rows="2"><?= htmlspecialchars($LS[$k]??'') ?></textarea>
+          <?php else: ?><input type="text" name="settings[<?= $k ?>]" class="form-control" value="<?= htmlspecialchars($LS[$k]??'') ?>">
+          <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+      </div></div></div>
+      <?php endforeach; ?>
+      <div class="card mb-3"><div class="card-header fw-700">Görseller (JPG/PNG/WEBP, en fazla 2MB)</div><div class="card-body"><div class="row g-3">
+        <div class="col-md-6"><label class="form-label">Üst logo</label><input type="file" name="nav_logo" class="form-control" accept=".jpg,.jpeg,.png,.webp"><div class="small text-muted mt-1">Mevcut: <?= htmlspecialchars($LS['nav_logo']??'') ?></div></div>
+        <div class="col-md-6"><label class="form-label">Hero yan görseli (boşsa varsayılan panel görünür)</label><input type="file" name="hero_image" class="form-control" accept=".jpg,.jpeg,.png,.webp"><div class="small text-muted mt-1">Mevcut: <?= htmlspecialchars($LS['hero_image']??'') ?: '—' ?></div></div>
+      </div></div></div>
+      <button class="btn btn-primary mb-4"><i class="fa-solid fa-save me-1"></i>Tüm İçeriği Kaydet</button>
+    </form>
+
+    <div class="card mb-4"><div class="card-header fw-700"><i class="fa-solid fa-bars me-2"></i>Üst Menü</div><div class="card-body p-0">
+      <table class="table mb-0"><thead><tr><th>#</th><th>Ad</th><th>Bağlantı</th><th>Sıra</th><th>Durum</th><th class="text-end">İşlem</th></tr></thead><tbody>
+      <?php foreach($allLandingMenus as $m): ?>
+      <tr>
+        <td class="text-muted"><?= $m['id'] ?></td>
+        <td class="fw-700"><?= htmlspecialchars($m['label']) ?></td>
+        <td class="small"><?= htmlspecialchars($m['url']) ?></td>
+        <td><?= (int)$m['sort_order'] ?></td>
+        <td><span class="badge <?= $m['is_active']?'bg-success':'bg-secondary' ?>"><?= $m['is_active']?'Açık':'Kapalı' ?></span></td>
+        <td class="text-end" style="white-space:nowrap">
+          <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editMenu<?= $m['id'] ?>"><i class="fa-solid fa-pen"></i></button>
+          <form method="post" style="display:inline"><input type="hidden" name="action" value="landing_menu_toggle"><input type="hidden" name="menu_id" value="<?= $m['id'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><button class="btn btn-sm btn-warning"><i class="fa-solid fa-eye"></i></button></form>
+          <form method="post" style="display:inline" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="action" value="landing_menu_delete"><input type="hidden" name="menu_id" value="<?= $m['id'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><button class="btn btn-sm btn-danger"><i class="fa-solid fa-trash"></i></button></form>
+        </td>
+      </tr>
+      <div class="modal fade" id="editMenu<?= $m['id'] ?>" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="landing_menu_edit"><input type="hidden" name="menu_id" value="<?= $m['id'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><div class="modal-header"><h5 class="modal-title">Menüyü Düzenle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">Ad</label><input type="text" name="label" class="form-control" value="<?= htmlspecialchars($m['label']) ?>" required></div><div class="mb-3"><label class="form-label">Bağlantı (örn: #fiyatlar)</label><input type="text" name="url" class="form-control" value="<?= htmlspecialchars($m['url']) ?>" required></div><div class="mb-3"><label class="form-label">Sıra</label><input type="number" name="sort_order" class="form-control" value="<?= (int)$m['sort_order'] ?>"></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-warning">Güncelle</button></div></form></div></div></div>
+      <?php endforeach; ?>
+      </tbody></table>
+      <form method="post" class="p-3 border-top d-flex gap-2 flex-wrap align-items-end">
+        <input type="hidden" name="action" value="landing_menu_add"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+        <div><label class="form-label">Ad</label><input type="text" name="label" class="form-control" required></div>
+        <div><label class="form-label">Bağlantı</label><input type="text" name="url" class="form-control" placeholder="#fiyatlar" required></div>
+        <div><label class="form-label">Sıra</label><input type="number" name="sort_order" class="form-control" value="0" style="width:90px"></div>
+        <div><button class="btn btn-primary"><i class="fa-solid fa-plus me-1"></i>Ekle</button></div>
+      </form>
+    </div></div>
+
+    <div class="card mb-4"><div class="card-header fw-700"><i class="fa-solid fa-circle-question me-2"></i>Sık Sorulan Sorular</div><div class="card-body p-0">
+      <table class="table mb-0"><thead><tr><th>#</th><th>Soru</th><th>Sıra</th><th>Durum</th><th class="text-end">İşlem</th></tr></thead><tbody>
+      <?php foreach($allLandingFaqs as $f): ?>
+      <tr>
+        <td class="text-muted"><?= $f['id'] ?></td>
+        <td class="fw-700"><?= htmlspecialchars($f['question']) ?></td>
+        <td><?= (int)$f['sort_order'] ?></td>
+        <td><span class="badge <?= $f['is_active']?'bg-success':'bg-secondary' ?>"><?= $f['is_active']?'Açık':'Kapalı' ?></span></td>
+        <td class="text-end" style="white-space:nowrap">
+          <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editFaq<?= $f['id'] ?>"><i class="fa-solid fa-pen"></i></button>
+          <form method="post" style="display:inline"><input type="hidden" name="action" value="landing_faq_toggle"><input type="hidden" name="faq_id" value="<?= $f['id'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><button class="btn btn-sm btn-warning"><i class="fa-solid fa-eye"></i></button></form>
+          <form method="post" style="display:inline" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="action" value="landing_faq_delete"><input type="hidden" name="faq_id" value="<?= $f['id'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><button class="btn btn-sm btn-danger"><i class="fa-solid fa-trash"></i></button></form>
+        </td>
+      </tr>
+      <div class="modal fade" id="editFaq<?= $f['id'] ?>" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="landing_faq_edit"><input type="hidden" name="faq_id" value="<?= $f['id'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><div class="modal-header"><h5 class="modal-title">Soruyu Düzenle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">Soru</label><input type="text" name="question" class="form-control" value="<?= htmlspecialchars($f['question']) ?>" required></div><div class="mb-3"><label class="form-label">Cevap</label><textarea name="answer" class="form-control" rows="3" required><?= htmlspecialchars($f['answer']) ?></textarea></div><div class="mb-3"><label class="form-label">Sıra</label><input type="number" name="sort_order" class="form-control" value="<?= (int)$f['sort_order'] ?>"></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-warning">Güncelle</button></div></form></div></div></div>
+      <?php endforeach; ?>
+      </tbody></table>
+      <form method="post" class="p-3 border-top">
+        <input type="hidden" name="action" value="landing_faq_add"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-4"><label class="form-label">Soru</label><input type="text" name="question" class="form-control" required></div>
+          <div class="col-md-5"><label class="form-label">Cevap</label><input type="text" name="answer" class="form-control" required></div>
+          <div class="col-md-1"><label class="form-label">Sıra</label><input type="number" name="sort_order" class="form-control" value="0"></div>
+          <div class="col-md-2"><button class="btn btn-primary w-100"><i class="fa-solid fa-plus me-1"></i>Ekle</button></div>
+        </div>
+      </form>
+    </div></div>
     <?php endif; ?>
 
   </div><!-- /content-body -->

@@ -1,4 +1,7 @@
 <?php require_once 'includes/config.php';
+require_once 'includes/functions.php';
+$menus=landing_menus($pdo); $faqsDb=landing_faqs($pdo);
+$T=function($k,$d='') use($pdo){ return landing_setting($pdo,$k,$d); };
 try{ $plans=$pdo->query("SELECT * FROM subscription_plans WHERE is_active=1 ORDER BY price_monthly")->fetchAll(); }catch(Exception $e){ $plans=[]; }
 if(!$plans){ $plans=[
   ['name'=>'Mini','max_residents'=>20,'price_monthly'=>149,'price_yearly'=>1490,'features'=>'["20 daireye kadar","Temel aidat takibi","WhatsApp bildirimleri","Dekont yükleme","Excel dosyasından hızlı aktarım"]'],
@@ -62,6 +65,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 .hero h1{font-weight:900;font-size:clamp(2.1rem,4.6vw,3.4rem);line-height:1.05;letter-spacing:-.03em}
 .hero h1 span{background:linear-gradient(90deg,#a5b4fc,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .hero .lead{color:#cbd5e1;font-size:1.1rem;max-width:640px}
+.badge-soft{background:rgba(99,102,241,.14);border:1px solid rgba(99,102,241,.28);color:#c7d2fe;border-radius:999px;padding:6px 12px;font-size:.78rem}
 .check-list{list-style:none;padding:0;margin:18px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
 .check-list li{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:9px 12px;font-size:.92rem}
 .btn-primary{background:var(--indigo);border-color:var(--indigo);box-shadow:0 10px 28px rgba(99,102,241,.35);font-weight:700}
@@ -92,15 +96,13 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
   <div class="container">
-    <a class="navbar-brand fw-bold d-flex align-items-center" href="landing.php"><img src="assets/img/resida-pro-logo2.png" alt="RESIDA PRO apartman yönetim programı logosu" style="height:28px" class="me-2" onerror="this.style.display='none'">RESIDA PRO</a>
+    <a class="navbar-brand fw-bold d-flex align-items-center" href="landing.php"><img src="<?= htmlspecialchars($T('nav_logo','assets/img/resida-pro-logo2.png')) ?>" alt="RESIDA PRO" style="height:28px" class="me-2" onerror="this.style.display='none'">RESIDA PRO</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"><span class="navbar-toggler-icon"></span></button>
     <div id="nav" class="collapse navbar-collapse">
       <div class="navbar-nav mx-auto gap-lg-2 small">
-        <a class="nav-link" href="#cozum">Çözüm</a>
-        <a class="nav-link" href="#odeme">Ödeme</a>
-        <a class="nav-link" href="#ekranlar">Ekranlar</a>
-        <a class="nav-link" href="#fiyatlar">Fiyatlar</a>
-        <a class="nav-link" href="#sss">SSS</a>
+        <?php $navItems=$menus?:[['label'=>'Çözüm','url'=>'#cozum'],['label'=>'Ödeme','url'=>'#odeme'],['label'=>'Ekranlar','url'=>'#ekranlar'],['label'=>'Fiyatlar','url'=>'#fiyatlar'],['label'=>'SSS','url'=>'#sss']]; foreach($navItems as $nv): ?>
+        <a class="nav-link" href="<?= htmlspecialchars($nv['url']) ?>"><?= htmlspecialchars($nv['label']) ?></a>
+        <?php endforeach; ?>
       </div>
       <div class="ms-auto d-flex gap-2">
         <a href="index.php" class="btn btn-outline-light btn-sm px-3">Giriş</a>
@@ -114,8 +116,9 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
   <div class="container">
     <div class="row align-items-center g-4">
       <div class="col-lg-6">
-        <h1>Apartman ve site yönetimini <span>Excel'den kurtarın.</span></h1>
-        <p class="lead mt-3">Aidat, gider, tahsilat ve sakin yönetimini tek panelden yönetin. Apartman yönetim programı arayan yöneticiler için sade, hızlı ve güvenilir çözüm.</p>
+        <?php $heroBadge=$T('hero_badge',''); if($heroBadge): ?><span class="badge-soft d-inline-flex align-items-center gap-2 mb-3"><i class="fa-solid fa-bolt me-1"></i><?= htmlspecialchars($heroBadge) ?></span><?php endif; ?>
+        <h1><?= htmlspecialchars($T('hero_title_a','Apartman ve site yönetimini')) ?> <span><?= htmlspecialchars($T('hero_title_b',"Excel'den kurtarın.")) ?></span></h1>
+        <p class="lead mt-3"><?= htmlspecialchars($T('hero_subtitle','Aidat, gider, tahsilat ve sakin yönetimini tek panelden yönetin.')) ?></p>
         <ul class="check-list">
           <li><i class="fa-solid fa-check text-success me-2"></i>Aidat takibi</li>
           <li><i class="fa-solid fa-check text-success me-2"></i>Otomatik gecikme faizi</li>
@@ -126,12 +129,13 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
         </ul>
         <?php if($demoSuccess): ?><div class="alert alert-success mt-3"><?= htmlspecialchars($demoSuccess) ?></div><?php endif; ?><?php if($demoError): ?><div class="alert alert-danger mt-3"><?= htmlspecialchars($demoError) ?></div><?php endif; ?>
         <div class="d-flex flex-wrap gap-2 mt-4">
-          <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#demoModal">Ücretsiz Başlayın</button>
-          <a href="#ekranlar" class="btn btn-outline-light btn-lg px-4">İncele</a>
+          <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#demoModal"><?= htmlspecialchars($T('hero_primary_btn','Ücretsiz Başlayın')) ?></button>
+          <a href="#ekranlar" class="btn btn-outline-light btn-lg px-4"><?= htmlspecialchars($T('hero_secondary_btn','İncele')) ?></a>
         </div>
-        <div class="small mt-3" style="color:#94a3b8">Kredi kartı gerekmez • 10 dakikada kurulum • Aynı gün tahsilat</div>
+        <div class="small mt-3" style="color:#94a3b8"><?= htmlspecialchars($T('hero_note','Kredi kartı gerekmez • 10 dakikada kurulum • Aynı gün tahsilat')) ?></div>
       </div>
       <div class="col-lg-6">
+        <?php $heroImg=$T('hero_image',''); if($heroImg): ?><img src="<?= htmlspecialchars($heroImg) ?>" alt="RESIDA panel" class="img-fluid rounded-4 mb-3"><?php endif; ?>
         <div class="shot">
           <div class="shot-top"><span class="dot" style="background:#ef4444"></span><span class="dot" style="background:#f59e0b"></span><span class="dot" style="background:#22c55e"></span><span class="ms-2 small" style="color:#94a3b8">RESIDA yönetici paneli – canlı görünüm</span></div>
           <div class="p-3" style="background:#0f172a">
@@ -159,8 +163,8 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 <section class="section" id="problem">
   <div class="container">
     <div class="text-center mb-4">
-      <h2 class="section-title">Excel, WhatsApp ve banka dekontları arasında kaybolmayın.</h2>
-      <p class="muted mx-auto" style="max-width:720px">Site yönetim programı kullanmayan yöneticiler her ay aynı sorunlarla uğraşıyor.</p>
+      <h2 class="section-title"><?= htmlspecialchars($T('problem_title',"Excel, WhatsApp ve banka dekontları arasında kaybolmayın.")) ?></h2>
+      <p class="muted mx-auto" style="max-width:720px"><?= htmlspecialchars($T('problem_subtitle','Site yönetim programı kullanmayan yöneticiler her ay aynı sorunlarla uğraşıyor.')) ?></p>
     </div>
     <div class="row g-3">
       <div class="col-md-4"><div class="card-soft p-4 h-100"><div class="feature-icon mb-3"><i class="fa-solid fa-file-excel"></i></div><h5 class="fw-bold">Excel'de aidat takibi</h5><ul class="small muted ps-3 mb-0"><li>Manuel hesaplama</li><li>Hatalı kayıt riski</li><li>Sürekli dosya güncelleme</li></ul></div></div>
@@ -174,8 +178,8 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 <section class="section bg-white border-top border-bottom" id="cozum">
   <div class="container">
     <div class="text-center mb-4">
-      <h2 class="section-title">Yönetmeniz gereken her şey tek panelde.</h2>
-      <p class="muted">Aidat takip programı olarak günlük işlerinizi sadeleştirir.</p>
+      <h2 class="section-title"><?= htmlspecialchars($T('solution_title','Yönetmeniz gereken her şey tek panelde.')) ?></h2>
+      <p class="muted"><?= htmlspecialchars($T('solution_subtitle','Aidat takip programı olarak günlük işlerinizi sadeleştirir.')) ?></p>
     </div>
     <div class="row g-3">
       <div class="col-md-6 col-lg-4"><div class="card-soft p-4 h-100"><div class="feature-icon mb-3"><i class="fa-solid fa-coins"></i></div><h5 class="fw-bold">Aidat Yönetimi</h5><p class="small muted mb-0">Aidatları otomatik oluşturun ve takip edin.</p></div></div>
@@ -193,8 +197,8 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
     <div class="pay-box">
       <div class="row align-items-center g-4">
         <div class="col-lg-6">
-          <h2 class="section-title" style="color:#fff">Ödeme RESIDA'da tutulmaz.</h2>
-          <p style="color:#cbd5e1">Sakin kartla ödeme yaptığında para doğrudan sitenin belirlediği banka hesabına yönlendirilir. Para bizim hesabımızda beklemez.</p>
+          <h2 class="section-title" style="color:#fff"><?= htmlspecialchars($T('payment_title',"Ödeme RESIDA'da tutulmaz.")) ?></h2>
+          <p style="color:#cbd5e1"><?= htmlspecialchars($T('payment_text','Sakin kartla ödeme yaptığında para doğrudan sitenin belirlediği banka hesabına yönlendirilir.')) ?></p>
           <div class="row g-2 mt-3">
             <div class="col-4"><div class="pay-step"><i class="fa-solid fa-user"></i><div class="fw-bold small mt-1">SAKİN</div><div class="small" style="color:#94a3b8">Ödemeyi yapar</div></div></div>
             <div class="col-4"><div class="pay-step"><i class="fa-solid fa-shield-halved"></i><div class="fw-bold small mt-1">RESIDA</div><div class="small" style="color:#94a3b8">Güvenle iletir</div></div></div>
@@ -221,8 +225,8 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 <section class="section bg-white border-top border-bottom" id="gecis">
   <div class="container">
     <div class="text-center mb-4">
-      <h2 class="section-title">Excel'den RESIDA'ya geçmek düşündüğünüzden kolay.</h2>
-      <p class="muted">Yıllardır kullandığınız verileri kaybetmeden RESIDA'ya geçin.</p>
+      <h2 class="section-title"><?= htmlspecialchars($T('migration_title',"Excel'den RESIDA'ya geçmek düşündüğünüzden kolay.")) ?></h2>
+      <p class="muted"><?= htmlspecialchars($T('migration_subtitle',"Yıllardır kullandığınız verileri kaybetmeden RESIDA'ya geçin.")) ?></p>
     </div>
     <div class="row g-3">
       <div class="col-md-4"><div class="card-soft p-4 h-100 text-center"><div class="badge bg-dark mb-2">1</div><h5 class="fw-bold">Excel dosyanızı hazırlayın</h5><p class="small muted">Daire, sakin ve borç listenizi mevcut dosyadan alın.</p></div></div>
@@ -235,8 +239,8 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 <section class="section" id="ekranlar">
   <div class="container">
     <div class="text-center mb-4">
-      <h2 class="section-title">Aidatları, sakinleri ve raporları tek ekrandan yönetin.</h2>
-      <p class="muted">Modern SaaS tasarımıyla hazırlanmış yönetici paneli.</p>
+      <h2 class="section-title"><?= htmlspecialchars($T('screens_title','Aidatları, sakinleri ve raporları tek ekrandan yönetin.')) ?></h2>
+      <p class="muted"><?= htmlspecialchars($T('screens_subtitle','Modern SaaS tasarımıyla hazırlanmış yönetici paneli.')) ?></p>
     </div>
     <div class="row g-4 align-items-center">
       <div class="col-lg-7">
@@ -253,8 +257,8 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
         </div>
       </div>
       <div class="col-lg-5">
-        <h3 class="fw-bold">Sakinler de her şeyi telefonundan takip etsin.</h3>
-        <p class="muted">Sakinler aidat borçlarını, ödemelerini, dekontlarını ve site duyurularını tek yerden takip edebilir.</p>
+        <h3 class="fw-bold"><?= htmlspecialchars($T('screens_side_title','Sakinler de her şeyi telefonundan takip etsin.')) ?></h3>
+        <p class="muted"><?= htmlspecialchars($T('screens_side_text','Sakinler aidat borçlarını, ödemelerini, dekontlarını ve site duyurularını tek yerden takip edebilir.')) ?></p>
         <div class="phone">
           <div class="phone-screen">
             <div class="small muted">Aidat Borcu</div>
@@ -272,8 +276,8 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 <section class="section" id="fiyatlar">
   <div class="container">
     <div class="text-center mb-3">
-      <h2 class="section-title">Size uygun paketi seçin</h2>
-      <p class="muted">Mevcut fiyatlandırma korunur. İstediğiniz zaman yükseltebilirsiniz.</p>
+      <h2 class="section-title"><?= htmlspecialchars($T('pricing_title','Size uygun paketi seçin')) ?></h2>
+      <p class="muted"><?= htmlspecialchars($T('pricing_subtitle','Mevcut fiyatlandırma korunur. İstediğiniz zaman yükseltebilirsiniz.')) ?></p>
     </div>
     <div class="d-flex justify-content-center gap-2 mb-4">
       <span class="small fw-bold">Aylık</span>
@@ -297,7 +301,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
       </div></div>
       <?php endforeach; ?>
     </div>
-    <div class="text-center small muted mt-3">Mini küçük apartmanlar • Standart orta büyüklükte siteler • Pro profesyonel site yönetimleri içindir.</div>
+    <div class="text-center small muted mt-3"><?= htmlspecialchars($T('pricing_note','Mini küçük apartmanlar • Standart orta büyüklükte siteler • Pro profesyonel site yönetimleri içindir.')) ?></div>
   </div>
 </section>
 
@@ -305,22 +309,20 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
   <div class="container">
     <div class="row g-4">
       <div class="col-lg-4">
-        <h2 class="section-title">Sık sorulan sorular</h2>
-        <p class="muted">Apartman yönetim programı hakkında merak edilenler.</p>
+        <h2 class="section-title"><?= htmlspecialchars($T('faq_title','Sık sorulan sorular')) ?></h2>
+        <p class="muted"><?= htmlspecialchars($T('faq_subtitle','Apartman yönetim programı hakkında merak edilenler.')) ?></p>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#demoModal">Canlı Demo İsteyin</button>
+        <div class="small muted mt-3"><i class="fa-solid fa-envelope me-1"></i><?= htmlspecialchars($T('contact_email','info@residapro.com')) ?><br><i class="fa-solid fa-phone me-1"></i><?= htmlspecialchars($T('contact_phone','0532 XXX XX XX')) ?></div>
       </div>
       <div class="col-lg-8 faq">
         <div class="accordion" id="faqAcc">
-          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#f1">RESIDA nedir?</button></h2><div id="f1" class="accordion-collapse collapse show" data-bs-parent="#faqAcc"><div class="accordion-body small muted">RESIDA, apartman ve siteler için aidat takip programıdır. Aidat, gider, tahsilat, dekont, duyuru ve sakin yönetimini tek panelde toplar.</div></div></div>
-          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f2">RESIDA ile ödeme nasıl alınır?</button></h2><div id="f2" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body small muted">Sakin havale yapıp dekont yükler, yönetici tek dokunuşla onaylar. Kartla ödemede tutar doğrudan site hesabına yönlendirilir.</div></div></div>
-          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f3">Para RESIDA'da tutuluyor mu?</button></h2><div id="f3" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body small muted">Hayır. Ödeme RESIDA'da tutulmaz. Para doğrudan sitenin belirlediği banka hesabına gider.</div></div></div>
-          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f4">Site IBAN'ı nasıl tanımlanıyor?</button></h2><div id="f4" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body small muted">Yönetici panelinden siteye ait banka adı, IBAN ve hesap sahibi bir kez tanımlanır. Tüm ödemeler bu hesaba yönlendirilir.</div></div></div>
-          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f5">Excel'deki bilgiler RESIDA'ya aktarılabilir mi?</button></h2><div id="f5" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body small muted">Evet. Daire ve sakin listenizi mevcut Excel dosyanızdan alıp kısa sürede RESIDA'ya aktarabilirsiniz.</div></div></div>
-          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f6">Sakinler sisteme nasıl giriş yapıyor?</button></h2><div id="f6" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body small muted">Her sakine kullanıcı adı ve şifre oluşturulur. Sakinler borç, ödeme, dekont ve duyuruları kendi panelinden görür.</div></div></div>
-          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f7">Mobil uygulama var mı?</button></h2><div id="f7" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body small muted">Evet. Telefon ve tabletten uyumlu sakin paneli bulunur. Ana ekrana ekleyerek uygulama gibi kullanabilirsiniz.</div></div></div>
-          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f8">İptal edebilir miyim?</button></h2><div id="f8" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body small muted">Evet. İstediğiniz zaman iptal edebilirsiniz. Verileriniz yedeklenebilir.</div></div></div>
-          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f9">Verilerim güvende mi?</button></h2><div id="f9" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body small muted">Evet. KVKK uyumlu altyapı, güvenli giriş, yetkilendirme ve düzenli yedekleme kullanılır.</div></div></div>
-          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f10">Gecikme faizi otomatik hesaplanıyor mu?</button></h2><div id="f10" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body small muted">Evet. Yönetici oran ve süre tanımladıktan sonra gecikme faizi otomatik hesaplanır ve rapora yansır.</div></div></div>
+          <?php $fi=0; foreach($faqsDb as $fq): $fi++; $fid='fq'.$fq['id']; ?>
+          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button <?= $fi>1?'collapsed':'' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#<?= $fid ?>"><?= htmlspecialchars($fq['question']) ?></button></h2><div id="<?= $fid ?>" class="accordion-collapse collapse <?= $fi===1?'show':'' ?>" data-bs-parent="#faqAcc"><div class="accordion-body small muted"><?= nl2br(htmlspecialchars($fq['answer'])) ?></div></div></div>
+          <?php endforeach; ?>
+          <?php if(!$faqsDb): ?>
+          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#f1">RESIDA nedir?</button></h2><div id="f1" class="accordion-collapse collapse show" data-bs-parent="#faqAcc"><div class="accordion-body small muted">RESIDA, apartman ve siteler için aidat takip programıdır.</div></div></div>
+          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f2">Ödeme nereye gider?</button></h2><div id="f2" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body small muted">Doğrudan site hesabına. RESIDA'da tutulmaz.</div></div></div>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -330,10 +332,10 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 <section class="section">
   <div class="container">
     <div class="cta p-4 p-lg-5 text-center">
-      <h2 class="fw-bold">Site yönetimini bugün kolaylaştırın.</h2>
-      <p style="color:#cbd5e1">Aidat, gider, tahsilat ve sakin yönetimini RESIDA ile tek panelden yönetin.</p>
+      <h2 class="fw-bold"><?= htmlspecialchars($T('cta_title','Site yönetimini bugün kolaylaştırın.')) ?></h2>
+      <p style="color:#cbd5e1"><?= htmlspecialchars($T('cta_text','Aidat, gider, tahsilat ve sakin yönetimini RESIDA ile tek panelden yönetin.')) ?></p>
       <div class="d-flex gap-2 justify-content-center flex-wrap mt-3">
-        <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#demoModal">Ücretsiz Başlayın</button>
+        <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#demoModal"><?= htmlspecialchars($T('cta_primary_btn','Ücretsiz Başlayın')) ?></button>
         <a href="#ekranlar" class="btn btn-outline-light btn-lg px-4">İncele</a>
       </div>
     </div>
@@ -342,7 +344,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 
 <footer class="py-4 border-top bg-white">
   <div class="container d-flex flex-wrap gap-3 justify-content-between small muted">
-    <span>© <?= date('Y') ?> RESIDA PRO • Apartman ve site yönetim programı</span>
+    <span>© <?= date('Y') ?> <?= htmlspecialchars($T('footer_text','RESIDA PRO • Apartman ve site yönetim programı')) ?></span>
     <span class="d-flex gap-3"><a href="kvkk.php" class="link-secondary text-decoration-none">KVKK</a><a href="index.php" class="link-secondary text-decoration-none">Giriş</a></span>
   </div>
 </footer>
