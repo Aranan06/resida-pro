@@ -20,7 +20,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['form_type']??'')==='demo_requ
       require_once __DIR__.'/vendor/autoload.php';
       try{
         $mail=new PHPMailer\PHPMailer\PHPMailer(true);
-        $mail->isSMTP(); $mail->Host='smtp.zoho.eu'; $mail->Timeout=8; $mail->Timelimit=10; $mail->SMTPAuth=true; $mail->Username='info@residapro.com'; $mail->Password='11823579bA.'; $mail->SMTPSecure=PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS; $mail->Port=465;
+        $mail->isSMTP(); $mail->Host='smtp.zoho.eu'; $mail->Timeout=8; $mail->SMTPAuth=true; $mail->Username='info@residapro.com'; $mail->Password='11823579bA.'; $mail->SMTPSecure=PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS; $mail->Port=465;
         $mail->CharSet='UTF-8'; $mail->setFrom('info@residapro.com','RESIDA PRO'); $mail->addAddress('info@residapro.com'); $mail->addReplyTo($email,$name);
         $mail->Subject=$subject; $mail->Body=$body; $mail->send(); $sent=true;
       }catch(Exception $e){ $sent=false; @file_put_contents(__DIR__.'/backups/demo_mail_error.log', date('Y-m-d H:i:s')." ".$e->getMessage()."\n", FILE_APPEND); }
