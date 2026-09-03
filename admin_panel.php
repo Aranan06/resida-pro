@@ -174,6 +174,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $pdo->prepare("DELETE FROM landing_faq WHERE id=?")->execute([(int)($_POST['faq_id']??0)]); $success='SSS silindi.';
     } elseif ($action === 'landing_faq_toggle') {
         $pdo->prepare("UPDATE landing_faq SET is_active=1-is_active WHERE id=?")->execute([(int)($_POST['faq_id']??0)]); $success='SSS durumu değişti.';
+    } elseif ($action === 'delete_lead') {
+        $idx=(int)($_POST['lead_idx']??-1); $lf=__DIR__.'/backups/demo_requests.log';
+        if(is_file($lf)){ $rows=file($lf,FILE_IGNORE_NEW_LINES); if(isset($rows[$idx])){ unset($rows[$idx]); file_put_contents($lf,implode("\n",$rows).(count($rows)?"\n":'')); $success='Talep silindi.'; } else $error='Kayıt bulunamadı.'; }
+    } elseif ($action === 'clear_leads') {
+        $lf=__DIR__.'/backups/demo_requests.log';
+        if(is_file($lf)) file_put_contents($lf,''); $success='Tüm talepler silindi.';
     }
 }
 
@@ -186,7 +192,7 @@ try{ $plans=$pdo->query("SELECT * FROM subscription_plans ORDER BY price_monthly
 try{ $subs=$pdo->query("SELECT ss.*, s.name as site_name, p.name as plan_name FROM site_subscriptions ss JOIN sites s ON ss.site_id=s.id JOIN subscription_plans p ON ss.plan_id=p.id ORDER BY ss.current_period_end DESC")->fetchAll(); }catch(PDOException $e){ $subs=[]; }
 try{ $pendingPayments=$pdo->query("SELECT p.*, s.name as site_name, pl.name as plan_name, u.name as manager_name FROM payments p LEFT JOIN sites s ON p.site_id=s.id LEFT JOIN site_subscriptions ss ON p.subscription_id=ss.id LEFT JOIN subscription_plans pl ON ss.plan_id=pl.id LEFT JOIN users u ON p.user_id=u.id WHERE p.status='pending' AND p.subscription_id IS NOT NULL ORDER BY p.created_at DESC")->fetchAll(); }catch(PDOException $e){ $pendingPayments=[]; }
 $demoLeads=[]; $leadLog=__DIR__.'/backups/demo_requests.log';
-if(is_file($leadLog)){ $lines=array_filter(array_map('trim',file($leadLog))); foreach(array_reverse($lines) as $ln){ $p=array_map('trim',explode('|',$ln)); $demoLeads[]=['date'=>$p[0]??'','name'=>$p[1]??'','company'=>$p[2]??'','phone'=>$p[3]??'','email'=>$p[4]??'','msg'=>implode(' | ',array_slice($p,5))]; } }
+if(is_file($leadLog)){ $raw=file($leadLog); foreach($raw as $idx=>$rl){ $ln=trim($rl); if($ln==='') continue; $p=array_map('trim',explode('|',$ln)); $demoLeads[]=['idx'=>$idx,'date'=>$p[0]??'','name'=>$p[1]??'','company'=>$p[2]??'','phone'=>$p[3]??'','email'=>$p[4]??'','msg'=>implode(' | ',array_slice($p,5))]; } $demoLeads=array_reverse($demoLeads); }
 $LS=landing_settings_all($pdo);
 try{ $allLandingMenus=$pdo->query("SELECT * FROM landing_menu ORDER BY sort_order,id")->fetchAll(); }catch(PDOException $e){ $allLandingMenus=[]; }
 try{ $allLandingFaqs=$pdo->query("SELECT * FROM landing_faq ORDER BY sort_order,id")->fetchAll(); }catch(PDOException $e){ $allLandingFaqs=[]; }
@@ -766,9 +772,14 @@ body.sidebar-hidden .main-content {
     <?php elseif ($page === 'leads'): ?>
     <div class="page-header d-flex justify-content-between align-items-start">
       <div><h1><i class="fa-solid fa-envelope-open-text me-2 text-warning"></i>Demo Talepleri</h1><p>Landing sayfasındaki ücretsiz deneme formu — en yeni en üstte</p></div>
-      <span class="badge bg-warning text-dark fs-6"><?= count($demoLeads) ?> talep</span>
+      <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-warning text-dark fs-6"><?= count($demoLeads) ?> talep</span>
+        <?php if($demoLeads): ?>
+        <form method="post" onsubmit="return confirm('Tüm talepler silinsin mi?')"><input type="hidden" name="action" value="clear_leads"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><button class="btn btn-sm btn-outline-danger">Tümünü Temizle</button></form>
+        <?php endif; ?>
+      </div>
     </div>
-    <div class="card"><div class="card-body p-0"><table class="table mb-0"><thead><tr><th>Tarih</th><th>Ad Soyad</th><th>Firma / Site</th><th>Telefon</th><th>E-posta</th><th>Mesaj</th></tr></thead><tbody>
+    <div class="card"><div class="card-body p-0"><table class="table mb-0"><thead><tr><th>Tarih</th><th>Ad Soyad</th><th>Firma / Site</th><th>Telefon</th><th>E-posta</th><th>Mesaj</th><th class="text-end">İşlem</th></tr></thead><tbody>
       <?php foreach($demoLeads as $ld): ?>
       <tr>
         <td class="small text-muted" style="white-space:nowrap"><?= htmlspecialchars($ld['date']) ?></td>
@@ -777,9 +788,10 @@ body.sidebar-hidden .main-content {
         <td><a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/','',$ld['phone'])) ?>"><?= htmlspecialchars($ld['phone']) ?></a></td>
         <td class="small"><a href="mailto:<?= htmlspecialchars($ld['email']) ?>"><?= htmlspecialchars($ld['email']) ?></a></td>
         <td class="small"><?= htmlspecialchars($ld['msg'] ?: '-') ?></td>
+        <td class="text-end"><form method="post" style="display:inline" onsubmit="return confirm('Bu talep silinsin mi?')"><input type="hidden" name="action" value="delete_lead"><input type="hidden" name="lead_idx" value="<?= (int)$ld['idx'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><button class="btn btn-sm btn-danger"><i class="fa-solid fa-trash"></i></button></form></td>
       </tr>
       <?php endforeach; ?>
-      <?php if(!$demoLeads): ?><tr><td colspan="6" class="text-center py-4 text-muted">Henüz talep yok</td></tr><?php endif; ?>
+      <?php if(!$demoLeads): ?><tr><td colspan="7" class="text-center py-4 text-muted">Henüz talep yok</td></tr><?php endif; ?>
     </tbody></table></div></div>
 
     <?php elseif ($page === 'landing'): ?>
