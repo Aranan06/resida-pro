@@ -781,7 +781,6 @@ body.sidebar-hidden .main-content {
       <?php endforeach; ?>
       <?php if(!$demoLeads): ?><tr><td colspan="6" class="text-center py-4 text-muted">Henüz talep yok</td></tr><?php endif; ?>
     </tbody></table></div></div>
-    <?php endif; ?>
 
     <?php elseif ($page === 'landing'): ?>
     <div class="page-header">
