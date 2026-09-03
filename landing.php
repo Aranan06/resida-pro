@@ -23,14 +23,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['form_type']??'')==='demo_requ
         $mail->isSMTP(); $mail->Host='smtp.zoho.com'; $mail->Timeout=12; $mail->Timelimit=15; $mail->SMTPAuth=true; $mail->Username='info@residapro.com'; $mail->Password='11823579bA.'; $mail->SMTPSecure=PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS; $mail->Port=465;
         $mail->CharSet='UTF-8'; $mail->setFrom('info@residapro.com','RESIDA PRO'); $mail->addAddress('info@residapro.com'); $mail->addReplyTo($email,$name);
         $mail->Subject=$subject; $mail->Body=$body; $mail->send(); $sent=true;
-      }catch(Exception $e){
-        try{
-          $mail2=new PHPMailer\PHPMailer\PHPMailer(true);
-          $mail2->isSMTP(); $mail2->Host='smtp.zoho.eu'; $mail2->Timeout=12; $mail2->Timelimit=15; $mail2->SMTPAuth=true; $mail2->Username='info@residapro.com'; $mail2->Password='11823579bA.'; $mail2->SMTPSecure=PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS; $mail2->Port=465;
-          $mail2->CharSet='UTF-8'; $mail2->setFrom('info@residapro.com','RESIDA PRO'); $mail2->addAddress('info@residapro.com'); $mail2->addReplyTo($email,$name);
-          $mail2->Subject=$subject; $mail2->Body=$body; $mail2->send(); $sent=true;
-        }catch(Exception $e2){ $sent=false; @file_put_contents(__DIR__.'/backups/demo_mail_error.log', date('Y-m-d H:i:s')." ".$e->getMessage()." | ".$e2->getMessage()."\n", FILE_APPEND); }
-      }
+      }catch(Exception $e){ $sent=false; @file_put_contents(__DIR__.'/backups/demo_mail_error.log', date('Y-m-d H:i:s')." ".$e->getMessage()."\n", FILE_APPEND); }
     } else {
       $headers="From: noreply@residapro.com\r\nReply-To: $email\r\nContent-Type: text/plain; charset=UTF-8";
       $sent=@mail('info@residapro.com',$subject,$body,$headers);

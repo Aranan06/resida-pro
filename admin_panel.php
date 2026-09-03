@@ -146,6 +146,8 @@ $managers = getSiteManagers($pdo);
 try{ $plans=$pdo->query("SELECT * FROM subscription_plans ORDER BY price_monthly")->fetchAll(); }catch(PDOException $e){ $plans=[]; }
 try{ $subs=$pdo->query("SELECT ss.*, s.name as site_name, p.name as plan_name FROM site_subscriptions ss JOIN sites s ON ss.site_id=s.id JOIN subscription_plans p ON ss.plan_id=p.id ORDER BY ss.current_period_end DESC")->fetchAll(); }catch(PDOException $e){ $subs=[]; }
 try{ $pendingPayments=$pdo->query("SELECT p.*, s.name as site_name, pl.name as plan_name, u.name as manager_name FROM payments p LEFT JOIN sites s ON p.site_id=s.id LEFT JOIN site_subscriptions ss ON p.subscription_id=ss.id LEFT JOIN subscription_plans pl ON ss.plan_id=pl.id LEFT JOIN users u ON p.user_id=u.id WHERE p.status='pending' AND p.subscription_id IS NOT NULL ORDER BY p.created_at DESC")->fetchAll(); }catch(PDOException $e){ $pendingPayments=[]; }
+$demoLeads=[]; $leadLog=__DIR__.'/backups/demo_requests.log';
+if(is_file($leadLog)){ $lines=array_filter(array_map('trim',file($leadLog))); foreach(array_reverse($lines) as $ln){ $p=array_map('trim',explode('|',$ln)); $demoLeads[]=['date'=>$p[0]??'','name'=>$p[1]??'','company'=>$p[2]??'','phone'=>$p[3]??'','email'=>$p[4]??'','msg'=>implode(' | ',array_slice($p,5))]; } }
 
 // İstatistikler
 $totalSites    = count($sites);
@@ -244,6 +246,10 @@ body.sidebar-hidden .main-content {
     <a href="?page=payments" class="nav-link <?= $page==='payments'?'active':'' ?>">
       <i class="fa-solid fa-money-bill-transfer"></i> Ödemeler
     </a>
+    <a href="?page=leads" class="nav-link <?= $page==='leads'?'active':'' ?>">
+      <i class="fa-solid fa-envelope-open-text"></i> Demo Talepleri
+      <?php if(!empty($demoLeads)): ?><span class="ms-auto badge" style="background:rgba(245,158,11,.2);color:#fcd34d;font-size:.68rem;"><?= count($demoLeads) ?></span><?php endif; ?>
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -266,8 +272,8 @@ body.sidebar-hidden .main-content {
 
       <span class="topbar-title">
         <?php
-        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler','payments'=>'Ödemeler'];
-        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card','payments'=>'money-bill-transfer'];
+        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler','payments'=>'Ödemeler','leads'=>'Demo Talepleri'];
+        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card','payments'=>'money-bill-transfer','leads'=>'envelope-open-text'];
         echo '<i class="fa-solid fa-'. ($iconMap[$page] ?? 'gauge-high'). ' me-2 text-accent"></i>';
         echo $titles[$page] ?? 'Admin';
         ?>
@@ -709,6 +715,25 @@ body.sidebar-hidden .main-content {
       </tr>
       <?php endforeach; ?>
       <?php if(!$pendingPayments): ?><tr><td colspan="8" class="text-center py-4 text-muted">Bekleyen ödeme yok</td></tr><?php endif; ?>
+    </tbody></table></div></div>
+
+    <?php elseif ($page === 'leads'): ?>
+    <div class="page-header d-flex justify-content-between align-items-start">
+      <div><h1><i class="fa-solid fa-envelope-open-text me-2 text-warning"></i>Demo Talepleri</h1><p>Landing sayfasındaki ücretsiz deneme formu — en yeni en üstte</p></div>
+      <span class="badge bg-warning text-dark fs-6"><?= count($demoLeads) ?> talep</span>
+    </div>
+    <div class="card"><div class="card-body p-0"><table class="table mb-0"><thead><tr><th>Tarih</th><th>Ad Soyad</th><th>Firma / Site</th><th>Telefon</th><th>E-posta</th><th>Mesaj</th></tr></thead><tbody>
+      <?php foreach($demoLeads as $ld): ?>
+      <tr>
+        <td class="small text-muted" style="white-space:nowrap"><?= htmlspecialchars($ld['date']) ?></td>
+        <td class="fw-700"><?= htmlspecialchars($ld['name']) ?></td>
+        <td><?= htmlspecialchars($ld['company'] ?: '-') ?></td>
+        <td><a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/','',$ld['phone'])) ?>"><?= htmlspecialchars($ld['phone']) ?></a></td>
+        <td class="small"><a href="mailto:<?= htmlspecialchars($ld['email']) ?>"><?= htmlspecialchars($ld['email']) ?></a></td>
+        <td class="small"><?= htmlspecialchars($ld['msg'] ?: '-') ?></td>
+      </tr>
+      <?php endforeach; ?>
+      <?php if(!$demoLeads): ?><tr><td colspan="6" class="text-center py-4 text-muted">Henüz talep yok</td></tr><?php endif; ?>
     </tbody></table></div></div>
     <?php endif; ?>
 
