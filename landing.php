@@ -269,20 +269,6 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
   </div>
 </section>
 
-<section class="section bg-white border-top border-bottom">
-  <div class="container">
-    <div class="text-center mb-4">
-      <h2 class="section-title">Gerçek yöneticiler anlatıyor</h2>
-      <p class="muted">Apartman ve site yöneticilerinin günlük işini kolaylaştırır</p>
-    </div>
-    <div class="row g-3">
-      <div class="col-md-4"><div class="card-soft p-4 h-100"><div class="small">“Excel'den 3 saat süren iş 4 dakikaya indi. Faiz ve dekont onayı hayat kurtardı.”</div><div class="small fw-bold mt-3">A Blok Yöneticisi</div><div class="small muted">64 daire • Ankara</div></div></div>
-      <div class="col-md-4"><div class="card-soft p-4 h-100" style="border-color:#6366f1"><div class="small">“Para artık bizde toplanmıyor, site hesabına gidiyor. Aidatı 10 saniyede kesiyoruz.”</div><div class="small fw-bold mt-3">Site Başkanlığı</div><div class="small muted">210 daire • İstanbul</div></div></div>
-      <div class="col-md-4"><div class="card-soft p-4 h-100"><div class="small">“Daireyi blok ve cadde filtresiyle buluyorum. Bildirim tek dokunuş.”</div><div class="small fw-bold mt-3">Yönetim Kurulu</div><div class="small muted">48 daire • İzmir</div></div></div>
-    </div>
-  </div>
-</section>
-
 <section class="section" id="fiyatlar">
   <div class="container">
     <div class="text-center mb-3">
