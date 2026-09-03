@@ -127,7 +127,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
         <?php if($demoSuccess): ?><div class="alert alert-success mt-3"><?= htmlspecialchars($demoSuccess) ?></div><?php endif; ?><?php if($demoError): ?><div class="alert alert-danger mt-3"><?= htmlspecialchars($demoError) ?></div><?php endif; ?>
         <div class="d-flex flex-wrap gap-2 mt-4">
           <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#demoModal">Ücretsiz Başlayın</button>
-          <a href="#ekranlar" class="btn btn-outline-light btn-lg px-4">15 Dakikalık Demo</a>
+          <a href="#ekranlar" class="btn btn-outline-light btn-lg px-4">İncele</a>
         </div>
         <div class="small mt-3" style="color:#94a3b8">Kredi kartı gerekmez • 10 dakikada kurulum • Aynı gün tahsilat</div>
       </div>
