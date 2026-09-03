@@ -334,7 +334,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
       <p style="color:#cbd5e1">Aidat, gider, tahsilat ve sakin yönetimini RESIDA ile tek panelden yönetin.</p>
       <div class="d-flex gap-2 justify-content-center flex-wrap mt-3">
         <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#demoModal">Ücretsiz Başlayın</button>
-        <a href="#ekranlar" class="btn btn-outline-light btn-lg px-4">Canlı Demo</a>
+        <a href="#ekranlar" class="btn btn-outline-light btn-lg px-4">İncele</a>
       </div>
     </div>
   </div>
