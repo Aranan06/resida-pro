@@ -1,5 +1,5 @@
 // service-worker.js – RESIDA PRO PWA (cache-first, offline + push)
-const CACHE = 'resida-v8';
+const CACHE = 'resida-v9';
 const ASSETS = [
   'index.php',
   'landing.php',
