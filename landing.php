@@ -135,7 +135,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
         <div class="small mt-3" style="color:#94a3b8"><?= htmlspecialchars($T('hero_note','Kredi kartı gerekmez • 10 dakikada kurulum • Aynı gün tahsilat')) ?></div>
       </div>
       <div class="col-lg-6">
-        <?php $heroImg=$T('hero_image',''); if($heroImg): ?><img src="<?= htmlspecialchars($heroImg) ?>" alt="RESIDA panel" class="img-fluid rounded-4 mb-3"><?php endif; ?>
+        <?php $heroImg=$T('hero_image',''); if($heroImg): ?><img src="<?= htmlspecialchars($heroImg) ?>" alt="RESIDA panel" class="img-fluid rounded-4 shadow"><?php else: ?>
         <div class="shot">
           <div class="shot-top"><span class="dot" style="background:#ef4444"></span><span class="dot" style="background:#f59e0b"></span><span class="dot" style="background:#22c55e"></span><span class="ms-2 small" style="color:#94a3b8">RESIDA yönetici paneli – canlı görünüm</span></div>
           <div class="p-3" style="background:#0f172a">
@@ -155,6 +155,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
             </div>
           </div>
         </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>
