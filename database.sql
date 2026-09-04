@@ -306,7 +306,8 @@ INSERT IGNORE INTO landing_settings (k, v) VALUES
 ('contact_phone', '0532 XXX XX XX'),
 ('footer_text', 'RESIDA PRO • Apartman ve site yönetim programı'),
 ('nav_logo', 'assets/img/resida-pro-logo2.png'),
-('hero_image', '');
+('hero_image', ''),
+('phone_image', '');
 INSERT IGNORE INTO landing_menu (id, label, url, sort_order, is_active) VALUES
 (1, 'Çözüm', '#cozum', 1, 1),
 (2, 'Ödeme', '#odeme', 2, 1),

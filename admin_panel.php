@@ -148,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $pdo->prepare("INSERT INTO landing_settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)")->execute([$k, is_string($v)?trim($v):$v]);
         }
         $upDir=__DIR__.'/assets/img/landing'; if(!is_dir($upDir) && !@mkdir($upDir,0777,true)) $error='Yükleme klasörü oluşturulamadı.';
-        foreach(['nav_logo','hero_image'] as $f){
+        foreach(['nav_logo','hero_image','phone_image'] as $f){
             if(!empty($_FILES[$f]['tmp_name']) && empty($_FILES[$f]['error'])){
                 $ext=strtolower(pathinfo($_FILES[$f]['name'],PATHINFO_EXTENSION));
                 if(in_array($ext,['jpg','jpeg','png','webp']) && $_FILES[$f]['size']<=2*1024*1024){
@@ -831,6 +831,7 @@ body.sidebar-hidden .main-content {
       <div class="card mb-3"><div class="card-header fw-700">Görseller (JPG/PNG/WEBP, en fazla 2MB)</div><div class="card-body"><div class="row g-3">
         <div class="col-md-6"><label class="form-label">Üst logo</label><input type="file" name="nav_logo" class="form-control" accept=".jpg,.jpeg,.png,.webp"><div class="small text-muted mt-1">Mevcut: <?= htmlspecialchars($LS['nav_logo']??'') ?></div></div>
         <div class="col-md-6"><label class="form-label">Hero yan görseli (boşsa varsayılan panel görünür)</label><input type="file" name="hero_image" class="form-control" accept=".jpg,.jpeg,.png,.webp"><div class="small text-muted mt-1">Mevcut: <?= htmlspecialchars($LS['hero_image']??'') ?: '—' ?></div></div>
+        <div class="col-md-6"><label class="form-label">Telefon kutusu görseli (boşsa varsayılan mock görünür)</label><input type="file" name="phone_image" class="form-control" accept=".jpg,.jpeg,.png,.webp"><div class="small text-muted mt-1">Mevcut: <?= htmlspecialchars($LS['phone_image']??'') ?: '—' ?></div></div>
       </div></div></div>
       <button class="btn btn-primary mb-4"><i class="fa-solid fa-save me-1"></i>Tüm İçeriği Kaydet</button>
     </form>

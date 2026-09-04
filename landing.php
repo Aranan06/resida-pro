@@ -260,6 +260,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
       <div class="col-lg-5">
         <h3 class="fw-bold"><?= htmlspecialchars($T('screens_side_title','Sakinler de her şeyi telefonundan takip etsin.')) ?></h3>
         <p class="muted"><?= htmlspecialchars($T('screens_side_text','Sakinler aidat borçlarını, ödemelerini, dekontlarını ve site duyurularını tek yerden takip edebilir.')) ?></p>
+        <?php $phoneImg=$T('phone_image',''); if($phoneImg): ?><img src="<?= htmlspecialchars($phoneImg) ?>" alt="RESIDA sakin mobil paneli - büyütmek için tıklayın" title="Büyütmek için tıklayın" class="img-fluid rounded-4 shadow" style="max-height:420px;cursor:zoom-in" data-bs-toggle="modal" data-bs-target="#phoneImgModal"><?php else: ?>
         <div class="phone">
           <div class="phone-screen">
             <div class="small muted">Aidat Borcu</div>
@@ -269,6 +270,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
             <div class="small muted">Ödeme Geçmişi • Dekont Yükle • Duyurular • Ekstre</div>
           </div>
         </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>
@@ -353,6 +355,9 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 <div class="modal fade" id="demoModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="form_type" value="demo_request"><div class="modal-header"><h5 class="modal-title">Ücretsiz Deneme Talebi</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">İsim Soyisim *</label><input type="text" name="demo_name" class="form-control" required></div><div class="mb-3"><label class="form-label">Firma / Site Adı</label><input type="text" name="demo_company" class="form-control"></div><div class="row g-3"><div class="col-md-6"><label class="form-label">Telefon *</label><input type="tel" name="demo_phone" class="form-control" required></div><div class="col-md-6"><label class="form-label">E-posta *</label><input type="email" name="demo_email" class="form-control" required></div></div><div class="mb-3 mt-3"><label class="form-label">Mesaj</label><textarea name="demo_msg" class="form-control" rows="3"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Gönder</button></div></form></div></div></div>
 <?php if($T('hero_image','')): ?>
 <div class="modal fade" id="heroImgModal" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-centered"><div class="modal-content bg-transparent border-0 position-relative"><button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"></button><img src="<?= htmlspecialchars($T('hero_image','')) ?>" alt="RESIDA panel" class="img-fluid rounded-4"></div></div></div>
+<?php endif; ?>
+<?php if($T('phone_image','')): ?>
+<div class="modal fade" id="phoneImgModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content bg-transparent border-0 position-relative"><button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"></button><img src="<?= htmlspecialchars($T('phone_image','')) ?>" alt="RESIDA sakin mobil paneli" class="img-fluid rounded-4"></div></div></div>
 <?php endif; ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
