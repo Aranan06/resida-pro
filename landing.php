@@ -135,7 +135,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
         <div class="small mt-3" style="color:#94a3b8"><?= htmlspecialchars($T('hero_note','Kredi kartı gerekmez • 10 dakikada kurulum • Aynı gün tahsilat')) ?></div>
       </div>
       <div class="col-lg-6">
-        <?php $heroImg=$T('hero_image',''); if($heroImg): ?><img src="<?= htmlspecialchars($heroImg) ?>" alt="RESIDA panel" class="img-fluid rounded-4 shadow"><?php else: ?>
+        <?php $heroImg=$T('hero_image',''); if($heroImg): ?><img src="<?= htmlspecialchars($heroImg) ?>" alt="RESIDA panel - büyütmek için tıklayın" title="Büyütmek için tıklayın" class="img-fluid rounded-4 shadow" data-bs-toggle="modal" data-bs-target="#heroImgModal" style="cursor:zoom-in"><?php else: ?>
         <div class="shot">
           <div class="shot-top"><span class="dot" style="background:#ef4444"></span><span class="dot" style="background:#f59e0b"></span><span class="dot" style="background:#22c55e"></span><span class="ms-2 small" style="color:#94a3b8">RESIDA yönetici paneli – canlı görünüm</span></div>
           <div class="p-3" style="background:#0f172a">
@@ -351,6 +351,9 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 </footer>
 
 <div class="modal fade" id="demoModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="form_type" value="demo_request"><div class="modal-header"><h5 class="modal-title">Ücretsiz Deneme Talebi</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">İsim Soyisim *</label><input type="text" name="demo_name" class="form-control" required></div><div class="mb-3"><label class="form-label">Firma / Site Adı</label><input type="text" name="demo_company" class="form-control"></div><div class="row g-3"><div class="col-md-6"><label class="form-label">Telefon *</label><input type="tel" name="demo_phone" class="form-control" required></div><div class="col-md-6"><label class="form-label">E-posta *</label><input type="email" name="demo_email" class="form-control" required></div></div><div class="mb-3 mt-3"><label class="form-label">Mesaj</label><textarea name="demo_msg" class="form-control" rows="3"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Gönder</button></div></form></div></div></div>
+<?php if($T('hero_image','')): ?>
+<div class="modal fade" id="heroImgModal" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-centered"><div class="modal-content bg-transparent border-0 position-relative"><button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"></button><img src="<?= htmlspecialchars($T('hero_image','')) ?>" alt="RESIDA panel" class="img-fluid rounded-4"></div></div></div>
+<?php endif; ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.getElementById('billToggle')?.addEventListener('change', function(){
