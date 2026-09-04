@@ -2,6 +2,7 @@
 // index.php – Giriş Sayfası
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
+track_visit($pdo,'giris');
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 if (isset($_SESSION['user'])) {

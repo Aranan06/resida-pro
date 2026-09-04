@@ -309,6 +309,9 @@ body.sidebar-hidden .main-content {
     <a href="?page=landing" class="nav-link <?= $page==='landing'?'active':'' ?>">
       <i class="fa-solid fa-globe"></i> Site İçeriği
     </a>
+    <a href="?page=analytics" class="nav-link <?= $page==='analytics'?'active':'' ?>">
+      <i class="fa-solid fa-chart-line"></i> Ziyaretçiler
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -331,8 +334,8 @@ body.sidebar-hidden .main-content {
 
       <span class="topbar-title">
         <?php
-        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler','payments'=>'Ödemeler','leads'=>'Demo Talepleri','landing'=>'Site İçeriği'];
-        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card','payments'=>'money-bill-transfer','leads'=>'envelope-open-text','landing'=>'globe'];
+        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler','payments'=>'Ödemeler','leads'=>'Demo Talepleri','landing'=>'Site İçeriği','analytics'=>'Ziyaretçiler'];
+        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card','payments'=>'money-bill-transfer','leads'=>'envelope-open-text','landing'=>'globe','analytics'=>'chart-line'];
         echo '<i class="fa-solid fa-'. ($iconMap[$page] ?? 'gauge-high'). ' me-2 text-accent"></i>';
         echo $titles[$page] ?? 'Admin';
         ?>
@@ -890,6 +893,47 @@ body.sidebar-hidden .main-content {
         </div>
       </form>
     </div></div>
+    <?php endif; ?>
+
+    <?php elseif ($page === 'analytics'): ?>
+    <div class="page-header"><div><h1><i class="fa-solid fa-chart-line me-2 text-accent"></i>Ziyaretçiler</h1><p>Sayfa görüntülenme ve benzersiz ziyaretçi — ham IP saklanmaz, KVKK uyumlu</p></div></div>
+    <?php
+    $avPages=['landing'=>'Tanıtım','giris'=>'Giriş','kvkk'=>'KVKK'];
+    $avData=[]; $avDaily=[]; $avRef=[];
+    try{
+      foreach($pdo->query("SELECT page,COUNT(*) t,COUNT(DISTINCT visitor_hash) u FROM page_views WHERE created_at>=CURDATE() GROUP BY page")->fetchAll() as $r) $avData[$r['page']]['d']=$r;
+      foreach($pdo->query("SELECT page,COUNT(*) t,COUNT(DISTINCT visitor_hash) u FROM page_views WHERE created_at>=CURDATE()-INTERVAL 6 DAY GROUP BY page")->fetchAll() as $r) $avData[$r['page']]['w']=$r;
+      foreach($pdo->query("SELECT page,COUNT(*) t,COUNT(DISTINCT visitor_hash) u FROM page_views WHERE created_at>=CURDATE()-INTERVAL 29 DAY GROUP BY page")->fetchAll() as $r) $avData[$r['page']]['m']=$r;
+      foreach($pdo->query("SELECT page,COUNT(*) t,COUNT(DISTINCT visitor_hash) u FROM page_views GROUP BY page")->fetchAll() as $r) $avData[$r['page']]['a']=$r;
+      $avDaily=$pdo->query("SELECT DATE(created_at) d,COUNT(*) t,COUNT(DISTINCT visitor_hash) u FROM page_views WHERE created_at>=CURDATE()-INTERVAL 13 DAY GROUP BY d ORDER BY d")->fetchAll();
+      $avRef=$pdo->query("SELECT referrer,COUNT(*) c FROM page_views WHERE created_at>=CURDATE()-INTERVAL 29 DAY AND referrer IS NOT NULL AND referrer<>'' GROUP BY referrer ORDER BY c DESC LIMIT 10")->fetchAll();
+    }catch(Exception $e){}
+    $avSum=function($k) use($avData){ $t=0;$u=0; foreach($avData as $p){ $t+=(int)($p[$k]['t']??0); $u+=(int)($p[$k]['u']??0); } return [$t,$u]; };
+    [$tD,$uD]=$avSum('d'); [$tW,$uW]=$avSum('w'); [$tM,$uM]=$avSum('m'); [$tA,$uA]=$avSum('a');
+    ?>
+    <div class="row g-4 mb-4">
+      <div class="col-md-3"><div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-eye"></i></div><div class="stat-info"><div class="stat-value"><?= $tD ?></div><div class="stat-label">Bugün (görüntülenme)</div><div class="stat-sub"><?= $uD ?> benzersiz</div></div></div></div>
+      <div class="col-md-3"><div class="stat-card"><div class="stat-icon cyan"><i class="fa-solid fa-calendar-week"></i></div><div class="stat-info"><div class="stat-value"><?= $tW ?></div><div class="stat-label">Son 7 Gün</div><div class="stat-sub"><?= $uW ?> benzersiz</div></div></div></div>
+      <div class="col-md-3"><div class="stat-card"><div class="stat-icon green"><i class="fa-solid fa-calendar-days"></i></div><div class="stat-info"><div class="stat-value"><?= $tM ?></div><div class="stat-label">Son 30 Gün</div><div class="stat-sub"><?= $uM ?> benzersiz</div></div></div></div>
+      <div class="col-md-3"><div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-chart-line"></i></div><div class="stat-info"><div class="stat-value"><?= $tA ?></div><div class="stat-label">Toplam</div><div class="stat-sub"><?= $uA ?> benzersiz</div></div></div></div>
+    </div>
+    <div class="card mb-4"><div class="card-header fw-700"><i class="fa-solid fa-table me-2"></i>Sayfa Bazında (görüntülenme / benzersiz)</div><div class="card-body p-0"><table class="table mb-0"><thead><tr><th>Sayfa</th><th>Bugün</th><th>7 Gün</th><th>30 Gün</th><th>Toplam</th></tr></thead><tbody>
+      <?php foreach($avPages as $pk=>$pl): $d=$avData[$pk]??[]; ?>
+      <tr><td class="fw-700"><?= $pl ?></td><td><?= (int)($d['d']['t']??0) ?> / <?= (int)($d['d']['u']??0) ?></td><td><?= (int)($d['w']['t']??0) ?> / <?= (int)($d['w']['u']??0) ?></td><td><?= (int)($d['m']['t']??0) ?> / <?= (int)($d['m']['u']??0) ?></td><td class="fw-700"><?= (int)($d['a']['t']??0) ?> / <?= (int)($d['a']['u']??0) ?></td></tr>
+      <?php endforeach; ?>
+    </tbody></table></div></div>
+    <div class="card mb-4"><div class="card-header fw-700"><i class="fa-solid fa-chart-column me-2"></i>Son 14 Gün</div><div class="card-body">
+      <?php $mx=1; foreach($avDaily as $dd) $mx=max($mx,(int)$dd['t']); ?>
+      <?php if($avDaily): foreach($avDaily as $dd): ?>
+      <div class="d-flex align-items-center gap-2 mb-1"><div class="small text-muted" style="width:90px"><?= date('d.m',strtotime($dd['d'])) ?></div><div class="flex-grow-1 rounded" style="background:#f1f5f9;height:22px"><div class="rounded" style="height:22px;width:<?= max(2,round($dd['t']/$mx*100)) ?>%;background:linear-gradient(90deg,#6366f1,#22d3ee)" title="<?= $dd['t'] ?> görüntülenme"></div></div><div class="small fw-700" style="width:110px"><?= $dd['t'] ?> / <?= $dd['u'] ?> tekil</div></div>
+      <?php endforeach; else: ?><div class="text-muted small">Henüz veri yok.</div><?php endif; ?>
+    </div></div>
+    <div class="card mb-4"><div class="card-header fw-700"><i class="fa-solid fa-link me-2"></i>En Çok Getiren Kaynaklar (30 gün)</div><div class="card-body p-0"><table class="table mb-0"><thead><tr><th>Kaynak</th><th class="text-end">Ziyaret</th></tr></thead><tbody>
+      <?php foreach($avRef as $rf): ?>
+      <tr><td class="small"><a href="<?= htmlspecialchars($rf['referrer']) ?>" target="_blank"><?= htmlspecialchars(mb_substr($rf['referrer'],0,80)) ?></a></td><td class="text-end fw-700"><?= $rf['c'] ?></td></tr>
+      <?php endforeach; ?>
+      <?php if(!$avRef): ?><tr><td colspan="2" class="text-center py-4 text-muted">Henüz kaynak verisi yok</td></tr><?php endif; ?>
+    </tbody></table></div></div>
     <?php endif; ?>
 
   </div><!-- /content-body -->

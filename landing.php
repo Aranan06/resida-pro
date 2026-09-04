@@ -2,6 +2,7 @@
 require_once 'includes/functions.php';
 $menus=landing_menus($pdo); $faqsDb=landing_faqs($pdo);
 $T=function($k,$d='') use($pdo){ return landing_setting($pdo,$k,$d); };
+track_visit($pdo,'landing');
 try{ $plans=$pdo->query("SELECT * FROM subscription_plans WHERE is_active=1 ORDER BY price_monthly")->fetchAll(); }catch(Exception $e){ $plans=[]; }
 if(!$plans){ $plans=[
   ['name'=>'Mini','max_residents'=>20,'price_monthly'=>149,'price_yearly'=>1490,'features'=>'["20 daireye kadar","Temel aidat takibi","WhatsApp bildirimleri","Dekont yükleme","Excel dosyasından hızlı aktarım"]'],
@@ -45,6 +46,14 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['form_type']??'')==='demo_requ
 <meta property="og:title" content="RESIDA PRO – Apartman ve Site Yönetim Programı">
 <meta property="og:description" content="Apartman ve site yönetimini Excel'den kurtarın. Aidat, gider, tahsilat ve sakin yönetimini tek panelden yönetin.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://residapro.com/">
+<meta property="og:image" content="https://residapro.com/assets/img/icon-512.png">
+<meta property="og:locale" content="tr_TR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RESIDA PRO – Apartman ve Site Yönetim Programı">
+<meta name="twitter:description" content="Apartman ve site yönetimini Excel'den kurtarın. Aidat, gider, tahsilat ve sakin yönetimini tek panelden yönetin.">
+<link rel="canonical" href="https://residapro.com/">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"RESIDA PRO","applicationCategory":"BusinessApplication","operatingSystem":"Web","description":"Apartman ve site yönetim programı: aidat takip, gider, tahsilat, dekont ve sakin yönetimi.","url":"https://residapro.com/","offers":{"@type":"Offer","price":"149","priceCurrency":"TRY"}}</script>
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/img/icon-96.png">

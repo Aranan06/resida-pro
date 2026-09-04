@@ -325,3 +325,13 @@ INSERT IGNORE INTO landing_faq (id, question, answer, sort_order, is_active) VAL
 (8, 'İptal edebilir miyim?', 'Evet. İstediğiniz zaman iptal edebilirsiniz. Verileriniz yedeklenebilir.', 8, 1),
 (9, 'Verilerim güvende mi?', 'Evet. KVKK uyumlu altyapı, güvenli giriş, yetkilendirme ve düzenli yedekleme kullanılır.', 9, 1),
 (10, 'Gecikme faizi otomatik hesaplanıyor mu?', 'Evet. Yönetici oran ve süre tanımladıktan sonra gecikme faizi otomatik hesaplanır ve rapora yansır.', 10, 1);
+-- Ziyaretci analitigi (KVKK uyumlu: ham IP saklanmaz, gunluk hash)
+CREATE TABLE IF NOT EXISTS page_views (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    page VARCHAR(50) NOT NULL,
+    visitor_hash CHAR(64) NOT NULL,
+    referrer VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_page_time (page, created_at),
+    INDEX idx_visitor (visitor_hash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

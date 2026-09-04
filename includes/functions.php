@@ -182,6 +182,20 @@ function landing_faqs($pdo) {
     try { return $pdo->query("SELECT * FROM landing_faq WHERE is_active=1 ORDER BY sort_order, id")->fetchAll(); }
     catch (Exception $e) { return []; }
 }
+// --- ZIYARET ANALITIGI (ham IP saklanmaz) ---
+function track_visit($pdo, $page) {
+    try {
+        if (php_sapi_name() === 'cli') return;
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 200);
+        $h = hash('sha256', $ip . '|' . $ua . '|' . date('Y-m-d'));
+        $chk = $pdo->prepare("SELECT id FROM page_views WHERE page=? AND visitor_hash=? AND created_at>(NOW()-INTERVAL 5 MINUTE) LIMIT 1");
+        $chk->execute([$page, $h]);
+        if ($chk->fetchColumn()) return;
+        $ref = substr($_SERVER['HTTP_REFERER'] ?? '', 0, 500);
+        $pdo->prepare("INSERT INTO page_views (page, visitor_hash, referrer) VALUES (?,?,?)")->execute([$page, $h, $ref ?: null]);
+    } catch (Exception $e) { /* sessiz gec */ }
+}
 // --- GÜVENLİK FONKSİYONLARI ---
 
 // 1. CSRF Token Üret ve Doğrula

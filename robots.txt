@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /backups/
+Disallow: /vendor/
+Disallow: /cron_backup.php
+Disallow: /cron_monthly_dues.php
+
+Sitemap: https://residapro.com/sitemap.xml

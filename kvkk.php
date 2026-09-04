@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<?php require_once 'includes/config.php'; require_once 'includes/functions.php'; track_visit($pdo,'kvkk'); ?><!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
