@@ -69,6 +69,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $bn=trim($_POST['block_name']??'');
             if($bn){ try{ $pdo->prepare("INSERT INTO blocks (site_id,name) VALUES (?,?)")->execute([$mySiteId,$bn]); $success='Blok eklendi.'; }catch(PDOException $e){ $error='Bu blok zaten var.'; } }
             else $error='Blok adı gerekli.';
+        } elseif ($a === 'import_residents') {
+            $importReport=['added'=>0,'skipped'=>[],'gen'=>[]];
+            if(!empty($_FILES['csv_file']['tmp_name']) && empty($_FILES['csv_file']['error'])){
+                $ext=strtolower(pathinfo($_FILES['csv_file']['name'],PATHINFO_EXTENSION));
+                if(!in_array($ext,['csv','txt'])){ $error='Sadece CSV dosyası yükleyin.'; }
+                else{
+                    $raw=file_get_contents($_FILES['csv_file']['tmp_name']);
+                    $raw=preg_replace('/^\xEF\xBB\xBF/','',$raw);
+                    $rows=array_values(array_filter(array_map('trim',preg_split('/\r\n|\n|\r/',$raw)),fn($l)=>$l!==''));
+                    if(count($rows)<2){ $error='Dosyada veri satırı yok.'; }
+                    else{
+                        $delim=(substr_count($rows[0],';')>=substr_count($rows[0],','))?';':',';
+                        $norm=function($s){ $s=mb_strtolower(trim((string)$s),'UTF-8'); return strtr($s,['ç'=>'c','ğ'=>'g','ı'=>'i','ö'=>'o','ş'=>'s','ü'=>'u','â'=>'a','î'=>'i','û'=>'u']); };
+                        $h=array_map($norm,str_getcsv(array_shift($rows),$delim));
+                        $col=function($names) use($h){ foreach($names as $n){ $i=array_search($n,$h); if($i!==false) return $i; } return null; };
+                        $cName=$col(['ad soyad','adsoyad','name']); $cBlock=$col(['blok','block']); $cFloor=$col(['kat','floor']); $cApt=$col(['daire no','daire','apartment_no','apartment']); $cPhone=$col(['telefon','phone']); $cMail=$col(['e-posta','eposta','email']); $cAddr=$col(['adres','address']); $cUser=$col(['kullanici adi','username']); $cPass=$col(['sifre','password']); $cNote=$col(['notlar','not','notes']);
+                        if($cName===null||$cApt===null){ $error='Başlık satırı tanınmadı. Örnek şablonu kullanın.'; }
+                        else{
+                            $bmap=[]; $bs=$pdo->prepare("SELECT id,name FROM blocks WHERE site_id=?"); $bs->execute([$mySiteId]);
+                            foreach($bs->fetchAll() as $b){ $bmap[$norm($b['name'])]=$b['id']; }
+                            $hasBlocks=count($bmap)>0;
+                            $limS=$pdo->prepare("SELECT max_residents FROM sites WHERE id=?"); $limS->execute([$mySiteId]); $maxR=(int)$limS->fetchColumn();
+                            $cntS=$pdo->prepare("SELECT COUNT(*) FROM users WHERE site_id=? AND role='resident'"); $cntS->execute([$mySiteId]); $cur=(int)$cntS->fetchColumn();
+                            $seenUsernames=[];
+                            foreach($rows as $rn=>$line){
+                                $f=str_getcsv($line,$delim); $ln=$rn+2;
+                                $v=function($c) use($f){ return trim($f[$c]??''); };
+                                $nm=$v($cName); $fl=$cFloor!==null?$v($cFloor):''; $ap=$v($cApt);
+                                if(!$nm||!$ap){ $importReport['skipped'][]="Satır $ln: Ad Soyad ve Daire No zorunlu."; continue; }
+                                $blk=null;
+                                if($hasBlocks){ $braw=$cBlock!==null?$v($cBlock):''; $bid=$bmap[$norm($braw)]??null; if(!$bid){ $importReport['skipped'][]="Satır $ln: Blok bulunamadı ($braw)."; continue; } $blk=$bid; }
+                                if($maxR>0&&$cur>=$maxR){ $importReport['skipped'][]="Satır $ln: Daire sakini sınırı doldu."; continue; }
+                                $un=$cUser!==null?$v($cUser):'';
+                                if(!$un){ $base=preg_replace('/[^a-z0-9]/','',$norm($nm).$ap); if(!$base) $base='sakin'.$ap; $un=$base; $sfx=1; $chk=$pdo->prepare("SELECT COUNT(*) FROM users WHERE username=?"); $chk->execute([$un]); while($chk->fetchColumn()>0||in_array($un,$seenUsernames)){ $un=$base.($sfx++); $chk->execute([$un]); } }
+                                $chk=$pdo->prepare("SELECT COUNT(*) FROM users WHERE username=?"); $chk->execute([$un]);
+                                if($chk->fetchColumn()>0||in_array($un,$seenUsernames)){ $importReport['skipped'][]="Satır $ln: Kullanıcı adı kullanımda ($un)."; continue; }
+                                $pw=$cPass!==null?$v($cPass):'';
+                                if(!$pw){ $pw=substr(str_shuffle('abcdefghjkmnpqrstuvxyz23456789'),0,8); }
+                                try{
+                                    $pdo->prepare("INSERT INTO users (username,password,role,name,site_id,block_id,floor,apartment_no,address,phone,email,notes) VALUES (?,?,'resident',?,?,?,?,?,?,?,?,?)")
+                                        ->execute([$un,password_hash($pw,PASSWORD_BCRYPT),$nm,$mySiteId,$blk,$fl,$ap,$v($cAddr),$v($cPhone),$v($cMail),$v($cNote)]);
+                                    $cur++; $seenUsernames[]=$un; $importReport['added']++;
+                                    if(($cPass===null||$v($cPass)==='')&&$un) $importReport['gen'][$un]=$pw;
+                                }catch(PDOException $ex){ $importReport['skipped'][]="Satır $ln: Kayıt hatası."; }
+                            }
+                            $success=$importReport['added'].' sakin eklendi.'.(count($importReport['skipped'])?' '.count($importReport['skipped']).' satır atlandı (detay aşağıda).':'');
+                        }
+                    }
+                }
+            } else { $error='Dosya seçilmedi.'; }
         } elseif ($a === 'add_announcement') {
             $t=trim($_POST['title']); $c=trim($_POST['content']);
             if ($t&&$c) { $pdo->prepare("INSERT INTO announcements (site_id,title,content) VALUES (?,?,?)")->execute([$mySiteId,$t,$c]); $success='Duyuru eklendi.'; }
@@ -583,9 +633,17 @@ document.addEventListener('DOMContentLoaded', function() {
   <div><h1><i class="fa-solid fa-people-roof me-2 text-cyan"></i>Daire Sakinleri</h1><p><?= count($residents) ?> kayıtlı sakin<?= $siteBlocks ? ' · '.count($siteBlocks).' blok' : '' ?></p></div>
   <div class="d-flex gap-2 flex-wrap">
     <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addBlockModal"><i class="fa-solid fa-layer-group me-2"></i>Blok Ekle</button>
+    <button class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#importResidentsModal"><i class="fa-solid fa-file-import me-2"></i>Toplu İçe Aktar</button>
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addResidentModal"><i class="fa-solid fa-user-plus me-2"></i>Yeni Sakin</button>
   </div>
 </div>
+<?php if(!empty($importReport??[])): ?>
+<div class="card mb-4 border-<?= ($importReport['added']??0)?'success':'warning' ?>"><div class="card-body">
+<div class="fw-700 mb-2"><i class="fa-solid fa-file-import me-1"></i><?= (int)($importReport['added']??0) ?> sakin eklendi, <?= count($importReport['skipped']??[]) ?> satır atlandı.</div>
+<?php if(!empty($importReport['gen'])): ?><div class="alert alert-info"><b>Otomatik oluşturulan giriş bilgileri (bir kez gösterilir, not alın):</b><br><?php foreach($importReport['gen'] as $u=>$p): ?><span class="badge bg-dark me-1"><?= htmlspecialchars($u) ?> / <?= htmlspecialchars($p) ?></span><?php endforeach; ?></div><?php endif; ?>
+<?php if(!empty($importReport['skipped'])): ?><ul class="small text-muted mb-0"><?php foreach(array_slice($importReport['skipped'],0,30) as $s): ?><li><?= htmlspecialchars($s) ?></li><?php endforeach; ?></ul><?php endif; ?>
+</div></div>
+<?php endif; ?>
 <?php if($siteBlocks): ?>
 <div class="filter-tabs mb-4">
   <a href="?page=residents&block=all" class="filter-tab <?= $activeBlock==='all'?'active':'' ?>">Tümü (<?= count($residents) ?>)</a>
@@ -865,6 +923,15 @@ $hasDebt=count(array_filter($rDues,fn($d)=>!$d['paid']))>0; ?>
 <div class="modal-body"><div class="mb-3"><label class="form-label">Blok Adı *</label><input type="text" name="block_name" class="form-control" placeholder="Örn: D Blok" required></div>
 <?php if($siteBlocks): ?><div class="small text-muted">Mevcut: <?= htmlspecialchars(implode(', ',array_column($siteBlocks,'name'))) ?></div><?php endif; ?></div>
 <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Ekle</button></div>
+</form></div></div></div>
+
+<div class="modal fade" id="importResidentsModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="import_residents">
+<div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-file-import me-2 text-info"></i>Toplu Sakin Aktar (Excel/CSV)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+<div class="alert alert-info small"><i class="fa-solid fa-download me-1"></i> Önce <a href="sakin-sablon.csv" download class="fw-700">örnek şablonu indirin</a>, bilgileri doldurun, dosyayı seçip aktarın. Blok adları sitedeki bloklarla birebir aynı olmalı. Şifresi boş bırakılanlara otomatik şifre üretilir.</div>
+<div class="mb-3"><label class="form-label">CSV Dosyası *</label><input type="file" name="csv_file" class="form-control" accept=".csv,.txt" required></div>
+</div>
+<div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-info text-white"><i class="fa-solid fa-upload me-1"></i>Aktar</button></div>
 </form></div></div></div>
 
 <div class="modal fade" id="addDueModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="add_due">
