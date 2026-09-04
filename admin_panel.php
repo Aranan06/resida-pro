@@ -29,7 +29,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($name) {
             $pdo->prepare("INSERT INTO sites (name, address, created_by, max_residents, bank_name, iban, iban_holder) VALUES (?,?,?,?,?,?,?)")
                 ->execute([$name, $addr, $user['id'], $max_residents, $bank_name, $iban, $iban_holder]);
-            $success = "\"$name\" sitesi başarıyla eklendi.";
+            $newSiteId = (int)$pdo->lastInsertId();
+            $blockCount = min(29, max(1, (int)($_POST['block_count'] ?? 1)));
+            if ($blockCount > 1) {
+                $letters = ['A','B','C','Ç','D','E','F','G','Ğ','H','I','İ','J','K','L','M','N','O','Ö','P','R','S','Ş','T','U','Ü','V','Y','Z'];
+                $insB = $pdo->prepare("INSERT IGNORE INTO blocks (site_id, name) VALUES (?,?)");
+                for ($bi = 0; $bi < $blockCount; $bi++) { $insB->execute([$newSiteId, $letters[$bi] . ' Blok']); }
+            }
+            $success = "\"$name\" sitesi başarıyla eklendi." . ($blockCount > 1 ? " ($blockCount blok oluşturuldu)" : "");
         } else { $error = 'Site adı zorunludur.'; }
 
     // Site Düzenle
@@ -913,6 +920,12 @@ body.sidebar-hidden .main-content {
             <label class="form-label">Maksimum Daire Sakini Sınırı</label>
             <input type="number" name="max_residents" class="form-control" min="0" value="0">
             <small class="text-muted">Sınır koymak istemiyorsanız 0 bırakın.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Blok Sayısı</label>
+            <input type="number" name="block_count" class="form-control" min="1" max="29" value="1">
+            <small class="text-muted">1 = tek blok (bloksuz). 2+ ise A Blok, B Blok... otomatik oluşur.</small>
           </div>
           
           <div class="mb-3">

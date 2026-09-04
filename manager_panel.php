@@ -27,8 +27,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $n=trim($_POST['name']); $fl=trim($_POST['floor']); $apt=trim($_POST['apartment_no']);
             $addr=trim($_POST['address']??''); $un=trim($_POST['username']); $pw=$_POST['password'];
             $ph=trim($_POST['phone']??''); $em=trim($_POST['email']??''); $nt=trim($_POST['notes']??'');
-            
-            if ($n&&$fl&&$apt&&$un&&$pw) {
+            $blk=!empty($_POST['block_id']) ? (int)$_POST['block_id'] : null;
+            $bc=$pdo->prepare("SELECT COUNT(*) FROM blocks WHERE site_id=?"); $bc->execute([$mySiteId]); $siteHasBlocks=(int)$bc->fetchColumn()>0;
+            if($blk){ $vc=$pdo->prepare("SELECT COUNT(*) FROM blocks WHERE id=? AND site_id=?"); $vc->execute([$blk,$mySiteId]); if(!(int)$vc->fetchColumn()) $blk=null; }
+
+            if ($n&&$fl&&$apt&&$un&&$pw&&(!$siteHasBlocks||$blk)) {
                 $limitStmt = $pdo->prepare("SELECT max_residents FROM sites WHERE id = ?");
                 $limitStmt->execute([$mySiteId]);
                 $maxResidents = (int)$limitStmt->fetchColumn();
@@ -40,19 +43,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 if ($maxResidents > 0 && $currentCount >= $maxResidents) {
                     $error = 'Hata: Bu site için belirlenen maksimum kişi sınırına ('.$maxResidents.') ulaştınız. Daha fazla daire sakini ekleyemezsiniz.';
                 } else {
-                    $pdo->prepare("INSERT INTO users (username,password,role,name,site_id,floor,apartment_no,address,phone,email,notes) VALUES (?,?,'resident',?,?,?,?,?,?,?,?)")
-                        ->execute([$un,password_hash($pw,PASSWORD_BCRYPT),$n,$mySiteId,$fl,$apt,$addr,$ph,$em,$nt]);
+                    $pdo->prepare("INSERT INTO users (username,password,role,name,site_id,block_id,floor,apartment_no,address,phone,email,notes) VALUES (?,?,'resident',?,?,?,?,?,?,?,?,?)")
+                        ->execute([$un,password_hash($pw,PASSWORD_BCRYPT),$n,$mySiteId,$blk,$fl,$apt,$addr,$ph,$em,$nt]);
                     $success='Daire sakini eklendi.';
                 }
-            } else { 
-                $error='Zorunlu alanları doldurun.'; 
+            } else {
+                $error=$siteHasBlocks&&!$blk ? 'Blok seçimi zorunlu.' : 'Zorunlu alanları doldurun.';
             }
         
         } elseif ($a === 'edit_resident') {
             $id=(int)$_POST['user_id']; $n=trim($_POST['name']); $fl=trim($_POST['floor']); $apt=trim($_POST['apartment_no']);
             $addr=trim($_POST['address']??''); $ph=trim($_POST['phone']??''); $em=trim($_POST['email']??''); $nt=trim($_POST['notes']??'');
-            $sql="UPDATE users SET name=?,floor=?,apartment_no=?,address=?,phone=?,email=?,notes=?";
-            $params=[$n,$fl,$apt,$addr,$ph,$em,$nt];
+            $blk=!empty($_POST['block_id']) ? (int)$_POST['block_id'] : null;
+            if($blk){ $vc=$pdo->prepare("SELECT COUNT(*) FROM blocks WHERE id=? AND site_id=?"); $vc->execute([$blk,$mySiteId]); if(!(int)$vc->fetchColumn()) $blk=null; }
+            $sql="UPDATE users SET name=?,block_id=?,floor=?,apartment_no=?,address=?,phone=?,email=?,notes=?";
+            $params=[$n,$blk,$fl,$apt,$addr,$ph,$em,$nt];
             if (!empty($_POST['password'])) { $sql.=",password=?"; $params[]=password_hash($_POST['password'],PASSWORD_BCRYPT); }
             $sql.=" WHERE id=? AND site_id=?"; $params[]=$id; $params[]=$mySiteId;
             $pdo->prepare($sql)->execute($params);
@@ -60,6 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } elseif ($a === 'delete_resident') {
             $pdo->prepare("DELETE FROM users WHERE id=? AND site_id=?")->execute([$_POST['user_id'],$mySiteId]);
             $success='Sakin silindi.';
+        } elseif ($a === 'add_block') {
+            $bn=trim($_POST['block_name']??'');
+            if($bn){ try{ $pdo->prepare("INSERT INTO blocks (site_id,name) VALUES (?,?)")->execute([$mySiteId,$bn]); $success='Blok eklendi.'; }catch(PDOException $e){ $error='Bu blok zaten var.'; } }
+            else $error='Blok adı gerekli.';
         } elseif ($a === 'add_announcement') {
             $t=trim($_POST['title']); $c=trim($_POST['content']);
             if ($t&&$c) { $pdo->prepare("INSERT INTO announcements (site_id,title,content) VALUES (?,?,?)")->execute([$mySiteId,$t,$c]); $success='Duyuru eklendi.'; }
@@ -301,6 +310,8 @@ if (isset($_GET['export']) && $_GET['export'] === 'dues') {
 
 // Data
 $residents = getResidentsBySite($pdo, $mySiteId);
+$blkStmt = $pdo->prepare("SELECT * FROM blocks WHERE site_id=? ORDER BY name"); $blkStmt->execute([$mySiteId]); $siteBlocks = $blkStmt->fetchAll();
+$activeBlock = $_GET['block'] ?? 'all';
 $announcements = getAnnouncementsBySite($pdo, $mySiteId);
 $events = getEventsBySite($pdo, $mySiteId);
 $dueSummary = getDueSummary($pdo, $mySiteId);
@@ -568,13 +579,31 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php endforeach; ?></div>
 
 <?php elseif($page==='residents'): ?>
-<div class="page-header d-flex justify-content-between align-items-start">
-  <div><h1><i class="fa-solid fa-people-roof me-2 text-cyan"></i>Daire Sakinleri</h1><p><?= count($residents) ?> kayıtlı sakin</p></div>
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addResidentModal"><i class="fa-solid fa-user-plus me-2"></i>Yeni Sakin</button>
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-3">
+  <div><h1><i class="fa-solid fa-people-roof me-2 text-cyan"></i>Daire Sakinleri</h1><p><?= count($residents) ?> kayıtlı sakin<?= $siteBlocks ? ' · '.count($siteBlocks).' blok' : '' ?></p></div>
+  <div class="d-flex gap-2 flex-wrap">
+    <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addBlockModal"><i class="fa-solid fa-layer-group me-2"></i>Blok Ekle</button>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addResidentModal"><i class="fa-solid fa-user-plus me-2"></i>Yeni Sakin</button>
+  </div>
 </div>
-<?php if($residents): ?>
+<?php if($siteBlocks): ?>
+<div class="filter-tabs mb-4">
+  <a href="?page=residents&block=all" class="filter-tab <?= $activeBlock==='all'?'active':'' ?>">Tümü (<?= count($residents) ?>)</a>
+  <?php foreach($siteBlocks as $b): $bcnt=count(array_filter($residents,fn($x)=>($x['block_id']??null)==$b['id'])); ?>
+  <a href="?page=residents&block=<?=$b['id']?>" class="filter-tab <?= (string)$activeBlock===(string)$b['id']?'active':'' ?>"><?= htmlspecialchars($b['name']) ?> (<?= $bcnt ?>)</a>
+  <?php endforeach; ?>
+  <?php $ncnt=count(array_filter($residents,fn($x)=>empty($x['block_id']))); if($ncnt): ?>
+  <a href="?page=residents&block=none" class="filter-tab <?= $activeBlock==='none'?'active':'' ?>">Bloksuz (<?= $ncnt ?>)</a>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
+<?php
+$shownResidents=$residents;
+if($siteBlocks&&$activeBlock!=='all'){ $shownResidents=array_filter($residents,fn($x)=> $activeBlock==='none' ? empty($x['block_id']) : (string)($x['block_id']??'')===(string)$activeBlock); }
+?>
+<?php if($shownResidents): ?>
 <div class="residents-grid">
-<?php foreach($residents as $i=>$r):
+<?php $ri=0; foreach($shownResidents as $r): $i=$ri++; ?>
   $colors=['c1','c2','c3','c4','c5']; $cc=$colors[$i%5];
   $rDues=getResidentDues($pdo,$r['id']);
   $hasDebt=count(array_filter($rDues,fn($d)=>!$d['paid']))>0;
@@ -583,7 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="resident-status <?= $hasDebt?'has-debt':'clear' ?>"></div>
   <div class="resident-avatar <?= $cc ?>"><?= avatarLetter($r['name']) ?></div>
   <div class="resident-name"><?= htmlspecialchars($r['name']) ?></div>
-  <div class="resident-apt"><?= $r['floor'] ?>. Kat · Daire <?= $r['apartment_no'] ?></div>
+  <div class="resident-apt"><?php if(!empty($r['block_name'])): ?><?= htmlspecialchars($r['block_name']) ?> · <?php endif; ?><?= $r['floor'] ?>. Kat · Daire <?= $r['apartment_no'] ?></div>
   <div class="resident-meta">
     <?php if($r['phone']): ?><span class="resident-tag"><i class="fa-solid fa-phone me-1"></i><?= htmlspecialchars($r['phone']) ?></span><?php endif; ?>
     <span class="resident-tag"><?= $hasDebt?'<i class="fa-solid fa-triangle-exclamation me-1" style="color:var(--danger)"></i>Borçlu':'<i class="fa-solid fa-check me-1" style="color:var(--success)"></i>Temiz' ?></span>
@@ -611,6 +640,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="col-md-6"><label class="form-label">Ad Soyad</label><input type="text" name="name" class="form-control" value="<?= htmlspecialchars($r['name']) ?>" required></div>
           <div class="col-md-3"><label class="form-label">Kat</label><input type="text" name="floor" class="form-control" value="<?= htmlspecialchars($r['floor']) ?>" required></div>
           <div class="col-md-3"><label class="form-label">Daire No</label><input type="text" name="apartment_no" class="form-control" value="<?= htmlspecialchars($r['apartment_no']) ?>" required></div>
+          <?php if($siteBlocks): ?><div class="col-md-6"><label class="form-label">Blok</label><select name="block_id" class="form-control"><option value="">Bloksuz</option><?php foreach($siteBlocks as $b): ?><option value="<?=$b['id']?>" <?=($r['block_id']??null)==$b['id']?'selected':''?>><?=htmlspecialchars($b['name'])?></option><?php endforeach; ?></select></div><?php endif; ?>
           <div class="col-md-6"><label class="form-label">Telefon</label><input type="text" name="phone" class="form-control" value="<?= htmlspecialchars($r['phone']??'') ?>"></div>
           <div class="col-md-6"><label class="form-label">E-posta</label><input type="email" name="email" class="form-control" value="<?= htmlspecialchars($r['email']??'') ?>"></div>
           <div class="col-12"><label class="form-label">Adres</label><input type="text" name="address" class="form-control" value="<?= htmlspecialchars($r['address']??'') ?>"></div>
@@ -818,6 +848,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-user-plus me-2 text-accent"></i>Yeni Sakin</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body"><div class="row g-3">
   <div class="col-12"><label class="form-label">Ad Soyad *</label><input type="text" name="name" class="form-control" required></div>
+  <?php if($siteBlocks): ?><div class="col-md-6"><label class="form-label">Blok *</label><select name="block_id" class="form-control" required><option value="">Seçin</option><?php foreach($siteBlocks as $b): ?><option value="<?=$b['id']?>"><?=htmlspecialchars($b['name'])?></option><?php endforeach; ?></select></div><?php endif; ?>
   <div class="col-4"><label class="form-label">Kat *</label><input type="text" name="floor" class="form-control" required></div>
   <div class="col-4"><label class="form-label">Daire No *</label><input type="text" name="apartment_no" class="form-control" required></div>
   <div class="col-4"><label class="form-label">Telefon</label><input type="text" name="phone" class="form-control"></div>
@@ -830,10 +861,17 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Kaydet</button></div>
 </form></div></div></div>
 
+<div class="modal fade" id="addBlockModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="add_block">
+<div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-layer-group me-2"></i>Blok Ekle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body"><div class="mb-3"><label class="form-label">Blok Adı *</label><input type="text" name="block_name" class="form-control" placeholder="Örn: D Blok" required></div>
+<?php if($siteBlocks): ?><div class="small text-muted">Mevcut: <?= htmlspecialchars(implode(', ',array_column($siteBlocks,'name'))) ?></div><?php endif; ?></div>
+<div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Ekle</button></div>
+</form></div></div></div>
+
 <div class="modal fade" id="addDueModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="add_due">
 <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-coins me-2 text-warning"></i>Aidat Ekle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body"><div class="row g-3">
-  <div class="col-12"><label class="form-label">Sakin *</label><select name="resident_id" class="form-select" required><option value="">Seçin</option><?php foreach($residents as $r): ?><option value="<?=$r['id']?>"><?=htmlspecialchars($r['name'])?> (Daire <?=$r['apartment_no']?>)</option><?php endforeach; ?></select></div>
+  <div class="col-12"><label class="form-label">Sakin *</label><select name="resident_id" class="form-select" required><option value="">Seçin</option><?php foreach($residents as $r): ?><option value="<?=$r['id']?>"><?=htmlspecialchars($r['name'])?> (<?= !empty($r['block_name'])?htmlspecialchars($r['block_name']).' / ':'' ?>Daire <?=$r['apartment_no']?>)</option><?php endforeach; ?></select></div>
   <div class="col-md-6"><label class="form-label">Tutar (₺) *</label><input type="number" step="0.01" name="amount" class="form-control" value="<?=$dueSetting['monthly_amount']??''?>" required></div>
   <div class="col-md-6"><label class="form-label">Vade Tarihi *</label><input type="date" name="due_date" class="form-control" required></div>
   <div class="col-12"><label class="form-label">Açıklama</label><input type="text" name="description" class="form-control"></div>
