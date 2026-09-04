@@ -1,8 +1,6 @@
-// service-worker.js – RESIDA PRO PWA (cache-first, offline + push)
-const CACHE = 'resida-v9';
+// service-worker.js – RESIDA PRO PWA (statik dosyalar cache-first, PHP sayfalar her zaman network)
+const CACHE = 'resida-v10';
 const ASSETS = [
-  'index.php',
-  'landing.php',
   'manifest.json',
   'assets/css/style.css',
   'assets/img/resida-pro-logo.png',
@@ -23,7 +21,8 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   if(e.request.method!=='GET' || !e.request.url.startsWith(self.location.origin)) return;
-  if(e.request.url.includes('/api/') || e.request.url.includes('cron_')) return;
+  const u = new URL(e.request.url);
+  if(u.pathname.endsWith('.php') || u.pathname.includes('/api/') || u.pathname.includes('cron_')) return;
   e.respondWith(
     caches.match(e.request).then(cached=>{
       const fetchPromise = fetch(e.request).then(resp=>{
