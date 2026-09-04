@@ -603,11 +603,10 @@ if($siteBlocks&&$activeBlock!=='all'){ $shownResidents=array_filter($residents,f
 ?>
 <?php if($shownResidents): ?>
 <div class="residents-grid">
-<?php $ri=0; foreach($shownResidents as $r): $i=$ri++; ?>
-  $colors=['c1','c2','c3','c4','c5']; $cc=$colors[$i%5];
-  $rDues=getResidentDues($pdo,$r['id']);
-  $hasDebt=count(array_filter($rDues,fn($d)=>!$d['paid']))>0;
-?>
+<?php $ri=0; foreach($shownResidents as $r): $i=$ri++;
+$colors=['c1','c2','c3','c4','c5']; $cc=$colors[$i%5];
+$rDues=getResidentDues($pdo,$r['id']);
+$hasDebt=count(array_filter($rDues,fn($d)=>!$d['paid']))>0; ?>
 <div class="resident-card" data-bs-toggle="modal" data-bs-target="#residentModal<?= $r['id'] ?>">
   <div class="resident-status <?= $hasDebt?'has-debt':'clear' ?>"></div>
   <div class="resident-avatar <?= $cc ?>"><?= avatarLetter($r['name']) ?></div>
