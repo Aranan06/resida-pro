@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $k=preg_replace('/[^a-z0-9_]/','',strtolower(trim($k))); if($k==='') continue;
             $pdo->prepare("INSERT INTO landing_settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)")->execute([$k, is_string($v)?trim($v):$v]);
         }
-        $upDir=__DIR__.'/assets/img/landing'; if(!is_dir($upDir)) mkdir($upDir,0777,true);
+        $upDir=__DIR__.'/assets/img/landing'; if(!is_dir($upDir) && !@mkdir($upDir,0777,true)) $error='Yükleme klasörü oluşturulamadı.';
         foreach(['nav_logo','hero_image'] as $f){
             if(!empty($_FILES[$f]['tmp_name']) && empty($_FILES[$f]['error'])){
                 $ext=strtolower(pathinfo($_FILES[$f]['name'],PATHINFO_EXTENSION));
