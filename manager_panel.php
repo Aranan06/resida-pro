@@ -69,6 +69,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $bn=trim($_POST['block_name']??'');
             if($bn){ try{ $pdo->prepare("INSERT INTO blocks (site_id,name) VALUES (?,?)")->execute([$mySiteId,$bn]); $success='Blok eklendi.'; }catch(PDOException $e){ $error='Bu blok zaten var.'; } }
             else $error='Blok adı gerekli.';
+        } elseif ($a === 'edit_block') {
+            $bid=(int)($_POST['block_id']??0); $bn=trim($_POST['block_name']??'');
+            if($bid&&$bn){ try{ $pdo->prepare("UPDATE blocks SET name=? WHERE id=? AND site_id=?")->execute([$bn,$bid,$mySiteId]); $success='Blok güncellendi.'; }catch(PDOException $e){ $error='Bu blok adı zaten var.'; } }
+            else $error='Blok adı gerekli.';
+        } elseif ($a === 'delete_block') {
+            $bid=(int)($_POST['block_id']??0);
+            if($bid){ $pdo->prepare("DELETE FROM blocks WHERE id=? AND site_id=?")->execute([$bid,$mySiteId]); $success='Blok silindi. İçindeki sakinler Bloksuz listesine taşındı.'; }
         } elseif ($a === 'import_residents') {
             $importReport=['added'=>0,'skipped'=>[],'gen'=>[]];
             if(!empty($_FILES['csv_file']['tmp_name']) && empty($_FILES['csv_file']['error'])){
@@ -654,6 +661,19 @@ document.addEventListener('DOMContentLoaded', function() {
   <a href="?page=residents&block=none" class="filter-tab <?= $activeBlock==='none'?'active':'' ?>">Bloksuz (<?= $ncnt ?>)</a>
   <?php endif; ?>
 </div>
+<?php endif; ?>
+<?php $activeBlockRow=null; foreach($siteBlocks as $bb){ if((string)$activeBlock===(string)$bb['id']){ $activeBlockRow=$bb; break; } } ?>
+<?php if($activeBlockRow): ?>
+<div class="d-flex gap-2 align-items-center mb-4 flex-wrap">
+  <span class="fw-700"><i class="fa-solid fa-layer-group me-1"></i><?= htmlspecialchars($activeBlockRow['name']) ?> bloğu:</span>
+  <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editBlockModal"><i class="fa-solid fa-pen me-1"></i>Yeniden Adlandır</button>
+  <form method="post" style="display:inline" onsubmit="return confirm('<?= htmlspecialchars($activeBlockRow['name']) ?> silinsin mi? İçindeki sakinler Bloksuz listesine taşınır.')"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="delete_block"><input type="hidden" name="block_id" value="<?= $activeBlockRow['id'] ?>"><button class="btn btn-sm btn-danger"><i class="fa-solid fa-trash me-1"></i>Bloku Sil</button></form>
+</div>
+<div class="modal fade" id="editBlockModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="edit_block"><input type="hidden" name="block_id" value="<?= $activeBlockRow['id'] ?>">
+<div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-pen me-2"></i>Blok Adını Değiştir</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body"><div class="mb-3"><label class="form-label">Blok Adı *</label><input type="text" name="block_name" class="form-control" value="<?= htmlspecialchars($activeBlockRow['name']) ?>" required></div></div>
+<div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-warning">Güncelle</button></div>
+</form></div></div></div>
 <?php endif; ?>
 <?php
 $shownResidents=$residents;
