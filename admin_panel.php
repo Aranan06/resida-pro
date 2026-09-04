@@ -893,7 +893,6 @@ body.sidebar-hidden .main-content {
         </div>
       </form>
     </div></div>
-    <?php endif; ?>
 
     <?php elseif ($page === 'analytics'): ?>
     <div class="page-header"><div><h1><i class="fa-solid fa-chart-line me-2 text-accent"></i>Ziyaretçiler</h1><p>Sayfa görüntülenme ve benzersiz ziyaretçi — ham IP saklanmaz, KVKK uyumlu</p></div></div>
