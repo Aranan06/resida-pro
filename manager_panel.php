@@ -743,9 +743,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <i class="fa-solid fa-check"></i>
         </button>
     <?php else: ?>
-        <form method="post" style="display:inline"><input type="hidden" name="action" value="mark_unpaid"><input type="hidden" name="due_id" value="<?=$d['id']?>"><button class="btn btn-sm btn-warning btn-icon" title="Geri Al"><i class="fa-solid fa-undo"></i></button></form>
+        <form method="post" style="display:inline"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="mark_unpaid"><input type="hidden" name="due_id" value="<?=$d['id']?>"><button class="btn btn-sm btn-warning btn-icon" title="Geri Al"><i class="fa-solid fa-undo"></i></button></form>
     <?php endif; ?>
-    <form method="post" style="display:inline" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="action" value="delete_due"><input type="hidden" name="due_id" value="<?=$d['id']?>"><button class="btn btn-sm btn-danger btn-icon"><i class="fa-solid fa-trash"></i></button></form>
+    <form method="post" style="display:inline" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="delete_due"><input type="hidden" name="due_id" value="<?=$d['id']?>"><button class="btn btn-sm btn-danger btn-icon"><i class="fa-solid fa-trash"></i></button></form>
 </td>
 </tr>
 <?php endforeach; else: ?>
@@ -766,7 +766,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <table class="table mb-0"><thead><tr><th>Kategori</th><th>Başlık</th><th>Tutar</th><th>Tarih</th><th>Açıklama</th><th class="text-end">İşlem</th></tr></thead><tbody>
 <?php if($expenses): foreach($expenses as $ex): $cl=$catColors[$ex['category']]??'#64748b'; ?>
 <tr><td><span class="cat-dot me-2" style="background:<?=$cl?>"></span><?=$ex['category']?></td><td class="fw-700"><?=htmlspecialchars($ex['title'])?></td><td class="fw-700 money"><?=money($ex['amount'])?> ₺</td><td><?=date_tr($ex['expense_date'])?></td><td class="text-muted"><?=htmlspecialchars($ex['description']??'-')?></td>
-<td class="text-end"><form method="post" style="display:inline" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="action" value="delete_expense"><input type="hidden" name="expense_id" value="<?=$ex['id']?>"><button class="btn btn-sm btn-danger btn-icon"><i class="fa-solid fa-trash"></i></button></form></td></tr>
+<td class="text-end"><form method="post" style="display:inline" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="delete_expense"><input type="hidden" name="expense_id" value="<?=$ex['id']?>"><button class="btn btn-sm btn-danger btn-icon"><i class="fa-solid fa-trash"></i></button></form></td></tr>
 <?php endforeach; else: ?><tr><td colspan="6"><div class="empty-state py-4"><i class="fa-solid fa-receipt"></i><h4>Gider kaydı yok</h4></div></td></tr><?php endif; ?>
 </tbody></table></div></div></div>
 
@@ -779,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="ann-card" data-bs-toggle="modal" data-bs-target="#annModal<?=$ann['id']?>">
   <div class="d-flex justify-content-between align-items-start">
   <div><div class="ann-card-title"><?= htmlspecialchars($ann['title']) ?></div><div class="ann-card-date mt-1"><i class="fa-solid fa-clock me-1"></i><?= datetime_tr($ann['created_at']) ?></div></div>
-  <form method="post" onclick="event.stopPropagation()" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="action" value="delete_announcement"><input type="hidden" name="id" value="<?=$ann['id']?>"><button class="btn btn-sm btn-danger btn-icon"><i class="fa-solid fa-trash"></i></button></form>
+  <form method="post" onclick="event.stopPropagation()" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="delete_announcement"><input type="hidden" name="id" value="<?=$ann['id']?>"><button class="btn btn-sm btn-danger btn-icon"><i class="fa-solid fa-trash"></i></button></form>
 </div>
 <div class="ann-card-body mt-2"><?= nl2br(htmlspecialchars(mb_substr($ann['content'], 0, 100))) ?><?= mb_strlen($ann['content']) > 100 ? ' <strong class="text-accent">Devamını Oku...</strong>' : '' ?></div>
 </div>
@@ -808,13 +808,13 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php if($events): foreach($events as $ev): ?>
 <div class="event-card"><div class="d-flex justify-content-between align-items-start">
   <div><div class="event-date"><i class="fa-solid fa-calendar me-1"></i><?= datetime_tr($ev['event_date']) ?></div><div class="fw-700 mt-1"><?= htmlspecialchars($ev['title']) ?></div><?php if($ev['description']): ?><div class="text-muted mt-1" style="font-size:.85rem"><?= nl2br(htmlspecialchars($ev['description'])) ?></div><?php endif; ?></div>
-  <form method="post" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="action" value="delete_event"><input type="hidden" name="id" value="<?=$ev['id']?>"><button class="btn btn-sm btn-danger btn-icon"><i class="fa-solid fa-trash"></i></button></form>
+  <form method="post" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="delete_event"><input type="hidden" name="id" value="<?=$ev['id']?>"><button class="btn btn-sm btn-danger btn-icon"><i class="fa-solid fa-trash"></i></button></form>
 </div></div>
 <?php endforeach; else: ?><div class="empty-state"><i class="fa-solid fa-calendar-days"></i><h4>Etkinlik yok</h4></div><?php endif; ?>
 <?php endif; ?>
 </div></div></div>
 
-<div class="modal fade" id="addResidentModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="add_resident">
+<div class="modal fade" id="addResidentModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="add_resident">
 <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-user-plus me-2 text-accent"></i>Yeni Sakin</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body"><div class="row g-3">
   <div class="col-12"><label class="form-label">Ad Soyad *</label><input type="text" name="name" class="form-control" required></div>
@@ -893,6 +893,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
         <input type="hidden" name="action" value="bulk_create_yearly">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
         <div class="modal-header" style="background:#fffbeb;border-bottom:1px solid #fde68a">
@@ -1083,6 +1084,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
 
         <form method="post" id="receiptMarkPaidForm" class="mt-3">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
           <input type="hidden" name="action" value="mark_paid">
           <input type="hidden" name="due_id" id="rcDueId">
           <button type="submit" class="btn btn-primary w-100">
