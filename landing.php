@@ -260,7 +260,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
       <div class="col-lg-5">
         <h3 class="fw-bold"><?= htmlspecialchars($T('screens_side_title','Sakinler de her şeyi telefonundan takip etsin.')) ?></h3>
         <p class="muted"><?= htmlspecialchars($T('screens_side_text','Sakinler aidat borçlarını, ödemelerini, dekontlarını ve site duyurularını tek yerden takip edebilir.')) ?></p>
-        <?php $phoneImg=$T('phone_image',''); if($phoneImg): ?><img src="<?= htmlspecialchars($phoneImg) ?>" alt="RESIDA sakin mobil paneli - büyütmek için tıklayın" title="Büyütmek için tıklayın" class="img-fluid rounded-4 shadow" style="max-height:420px;cursor:zoom-in" data-bs-toggle="modal" data-bs-target="#phoneImgModal"><?php else: ?>
+        <?php $phoneImg=$T('phone_image',''); if($phoneImg): ?><img src="<?= htmlspecialchars($phoneImg) ?>" alt="RESIDA sakin mobil paneli - büyütmek için tıklayın" title="Büyütmek için tıklayın" class="img-fluid" style="max-height:420px;cursor:zoom-in" data-bs-toggle="modal" data-bs-target="#phoneImgModal"><?php else: ?>
         <div class="phone">
           <div class="phone-screen">
             <div class="small muted">Aidat Borcu</div>
