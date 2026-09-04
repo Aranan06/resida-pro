@@ -10,11 +10,18 @@ $st=$pdo->prepare("SELECT 1 FROM site_subscriptions WHERE site_id=? AND status='
 $ms=$pdo->prepare("SELECT ss.*, p.name as plan_name FROM site_subscriptions ss JOIN subscription_plans p ON ss.plan_id=p.id WHERE ss.site_id=? AND ss.status='active' ORDER BY ss.current_period_end DESC LIMIT 1"); $ms->execute([$mySiteId]); $mySubscription=$ms->fetch();
 $error = $success = '';
 
-$siteStmt = $pdo->prepare("SELECT name, max_residents FROM sites WHERE id = ?");
+$siteStmt = $pdo->prepare("SELECT name, max_residents, address, bank_name, iban, iban_holder, penalty_enabled, penalty_rate, penalty_grace_days FROM sites WHERE id = ?");
 $siteStmt->execute([$mySiteId]);
 $siteData = $siteStmt->fetch(PDO::FETCH_ASSOC);
 $siteName = $siteData['name'] ?? 'Bilinmeyen Site';
 $maxResidents = (int)($siteData['max_residents'] ?? 0);
+$siteAddress = $siteData['address'] ?? '';
+$siteBank = $siteData['bank_name'] ?? '';
+$siteIban = $siteData['iban'] ?? '';
+$siteHolder = $siteData['iban_holder'] ?? '';
+$penEnabled = (int)($siteData['penalty_enabled'] ?? 0);
+$penRate = $siteData['penalty_rate'] ?? 5;
+$penGrace = (int)($siteData['penalty_grace_days'] ?? 5);
 
 // POST İŞLEMLERİ
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -69,6 +76,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $bn=trim($_POST['block_name']??'');
             if($bn){ try{ $pdo->prepare("INSERT INTO blocks (site_id,name) VALUES (?,?)")->execute([$mySiteId,$bn]); $success='Blok eklendi.'; }catch(PDOException $e){ $error='Bu blok zaten var.'; } }
             else $error='Blok adı gerekli.';
+        } elseif ($a === 'save_site_settings') {
+            $sn=trim($_POST['site_name']??''); $sa=trim($_POST['site_address']??'');
+            $bn=trim($_POST['bank_name']??''); $ib=trim($_POST['iban']??''); $ih=trim($_POST['iban_holder']??'');
+            $pe=!empty($_POST['penalty_enabled'])?1:0; $pr=(float)($_POST['penalty_rate']??5); $pg=(int)($_POST['penalty_grace_days']??5);
+            if($sn){
+                $pdo->prepare("UPDATE sites SET name=?,address=?,bank_name=?,iban=?,iban_holder=?,penalty_enabled=?,penalty_rate=?,penalty_grace_days=? WHERE id=?")->execute([$sn,$sa,$bn,$ib,$ih,$pe,$pr,$pg,$mySiteId]);
+                $siteStmt->execute([$mySiteId]); $siteData=$siteStmt->fetch(PDO::FETCH_ASSOC);
+                $siteName=$siteData['name']??$sn; $siteAddress=$siteData['address']??''; $siteBank=$siteData['bank_name']??''; $siteIban=$siteData['iban']??''; $siteHolder=$siteData['iban_holder']??'';
+                $penEnabled=(int)($siteData['penalty_enabled']??0); $penRate=$siteData['penalty_rate']??5; $penGrace=(int)($siteData['penalty_grace_days']??5);
+                $success='Site ayarları kaydedildi.';
+            } else $error='Site adı boş olamaz.';
         } elseif ($a === 'edit_block') {
             $bid=(int)($_POST['block_id']??0); $bn=trim($_POST['block_name']??'');
             if($bid&&$bn){ try{ $pdo->prepare("UPDATE blocks SET name=? WHERE id=? AND site_id=?")->execute([$bn,$bid,$mySiteId]); $success='Blok güncellendi.'; }catch(PDOException $e){ $error='Bu blok adı zaten var.'; } }
@@ -468,6 +486,8 @@ body.sidebar-hidden .main-content { margin-left: 0 !important; width: 100% !impo
     <div class="sidebar-section">İletişim</div>
     <a href="?page=announcements" class="nav-link <?= $page==='announcements'?'active':'' ?>"><i class="fa-solid fa-bullhorn"></i> Duyurular</a>
     <a href="?page=events" class="nav-link <?= $page==='events'?'active':'' ?>"><i class="fa-solid fa-calendar-days"></i> Etkinlikler</a>
+    <div class="sidebar-section">Ayarlar</div>
+    <a href="?page=settings" class="nav-link <?= $page==='settings'?'active':'' ?>"><i class="fa-solid fa-gear"></i> Site Ayarları</a>
   </nav>
   <div class="sidebar-footer"><a href="logout.php" class="nav-link" style="color:#f87171!important"><i class="fa-solid fa-right-from-bracket"></i> Çıkış</a></div>
 </aside>
@@ -479,10 +499,10 @@ body.sidebar-hidden .main-content { margin-left: 0 !important; width: 100% !impo
       <i class="fa-solid fa-bars fs-6"></i> <span>Menü</span>
     </button>
     <span class="topbar-title"><i class="fa-solid fa-<?php
-      $icons=['dashboard'=>'gauge-high','myplan'=>'crown','residents'=>'people-roof','dues'=>'coins','expenses'=>'receipt','announcements'=>'bullhorn','events'=>'calendar-days'];
+      $icons=['dashboard'=>'gauge-high','myplan'=>'crown','residents'=>'people-roof','dues'=>'coins','expenses'=>'receipt','announcements'=>'bullhorn','events'=>'calendar-days','settings'=>'gear'];
       echo $icons[$page]??'gauge-high';
     ?> me-2 text-accent"></i><?php
-      $titles=['dashboard'=>'Dashboard','myplan'=>'Paketim','residents'=>'Sakinler','dues'=>'Aidat Yönetimi','expenses'=>'Giderler','announcements'=>'Duyurular','events'=>'Etkinlikler'];
+      $titles=['dashboard'=>'Dashboard','myplan'=>'Paketim','residents'=>'Sakinler','dues'=>'Aidat Yönetimi','expenses'=>'Giderler','announcements'=>'Duyurular','events'=>'Etkinlikler','settings'=>'Site Ayarları'];
       echo $titles[$page]??'Dashboard';
     ?></span>
   </div>
@@ -606,6 +626,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<?php elseif($page==='settings'): ?>
+<div class="page-header">
+  <div><h1><i class="fa-solid fa-gear me-2 text-accent"></i>Site Ayarları</h1><p>Site bilgileri, tahsilat hesabı ve gecikme faizi</p></div>
+</div>
+<div class="card"><div class="card-body">
+<form method="post">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+<input type="hidden" name="action" value="save_site_settings">
+<h6 class="fw-700 mb-3"><i class="fa-solid fa-building me-1"></i>Site Bilgileri</h6>
+<div class="row g-3">
+  <div class="col-md-6"><label class="form-label">Site Adı *</label><input type="text" name="site_name" class="form-control" value="<?= htmlspecialchars($siteName) ?>" required></div>
+  <div class="col-md-6"><label class="form-label">Adres</label><input type="text" name="site_address" class="form-control" value="<?= htmlspecialchars($siteAddress) ?>"></div>
+</div>
+<hr class="divider my-4">
+<h6 class="fw-700 mb-1"><i class="fa-solid fa-building-columns me-1"></i>Tahsilat Hesabı (IBAN)</h6>
+<p class="small text-muted">Sakinler aidatlarını bu hesaba yatırır. Sakin panelinde ve makbuzlarda görünür.</p>
+<div class="row g-3">
+  <div class="col-md-4"><label class="form-label">Banka Adı</label><input type="text" name="bank_name" class="form-control" placeholder="Örn: Ziraat Bankası" value="<?= htmlspecialchars($siteBank) ?>"></div>
+  <div class="col-md-4"><label class="form-label">IBAN</label><input type="text" name="iban" class="form-control" placeholder="TR00 0000 0000 0000 0000 0000 00" value="<?= htmlspecialchars($siteIban) ?>"></div>
+  <div class="col-md-4"><label class="form-label">Hesap Sahibi</label><input type="text" name="iban_holder" class="form-control" placeholder="Site Yönetimi" value="<?= htmlspecialchars($siteHolder) ?>"></div>
+</div>
+<hr class="divider my-4">
+<h6 class="fw-700 mb-3"><i class="fa-solid fa-percent me-1"></i>Gecikme Faizi</h6>
+<div class="row g-3 align-items-end">
+  <div class="col-md-4"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="penalty_enabled" value="1" <?= $penEnabled?'checked':'' ?>><label class="form-check-label">Faiz uygulansın</label></div></div>
+  <div class="col-md-4"><label class="form-label">Aylık Oran (%)</label><input type="number" step="0.01" min="0" name="penalty_rate" class="form-control" value="<?= htmlspecialchars($penRate) ?>"></div>
+  <div class="col-md-4"><label class="form-label">Hoşgörü Günü</label><input type="number" min="0" name="penalty_grace_days" class="form-control" value="<?= (int)$penGrace ?>"></div>
+</div>
+<div class="mt-4"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-save me-1"></i>Kaydet</button></div>
+</form>
+</div></div>
 
 <?php elseif($page==='myplan'): ?>
 <div class="page-header">
