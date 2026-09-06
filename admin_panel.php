@@ -505,6 +505,7 @@ body.sidebar-hidden .main-content {
                     <i class="fa-solid fa-pen"></i>
                   </button>
                   <form method="post" style="display:inline" onsubmit="return confirm('Bu siteyi silmek istediğinize emin misiniz?')">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                     <input type="hidden" name="action" value="delete_site">
                     <input type="hidden" name="site_id" value="<?= $s['id'] ?>">
                     <button class="btn btn-sm btn-danger btn-icon" title="Sil"><i class="fa-solid fa-trash"></i></button>
@@ -516,6 +517,7 @@ body.sidebar-hidden .main-content {
                 <div class="modal-dialog">
                   <div class="modal-content">
                     <form method="post">
+                      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                       <input type="hidden" name="action" value="edit_site">
                       <input type="hidden" name="site_id" value="<?= $s['id'] ?>">
                       
@@ -633,6 +635,7 @@ body.sidebar-hidden .main-content {
                 <td class="text-end">
                   <button class="btn btn-sm btn-secondary btn-icon me-1" data-bs-toggle="modal" data-bs-target="#editMgrModal<?= $m['id'] ?>"><i class="fa-solid fa-pen"></i></button>
                   <form method="post" style="display:inline" onsubmit="return confirm('Bu yöneticiyi silmek istediğinize emin misiniz?')">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                     <input type="hidden" name="action" value="delete_manager">
                     <input type="hidden" name="manager_id" value="<?= $m['id'] ?>">
                     <button class="btn btn-sm btn-danger btn-icon"><i class="fa-solid fa-trash"></i></button>
@@ -644,6 +647,7 @@ body.sidebar-hidden .main-content {
                 <div class="modal-dialog">
                   <div class="modal-content">
                     <form method="post">
+                      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                       <input type="hidden" name="action" value="edit_manager">
                       <input type="hidden" name="manager_id" value="<?= $m['id'] ?>">
                       <div class="modal-header">
@@ -721,12 +725,12 @@ body.sidebar-hidden .main-content {
             <?php $pf=json_decode($pl['features']??'[]',true); if(is_array($pf)&&$pf): ?><ul class="small muted ps-3 mt-2 mb-0"><?php foreach($pf as $ff): ?><li><?= htmlspecialchars($ff) ?></li><?php endforeach; ?></ul><?php endif; ?>
             <div class="mt-3 d-flex gap-2">
               <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editPlan<?= $pl['id'] ?>"><i class="fa-solid fa-pen"></i></button>
-              <form method="post" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="action" value="delete_plan"><input type="hidden" name="plan_id" value="<?= $pl['id'] ?>"><button class="btn btn-sm btn-danger"><i class="fa-solid fa-trash"></i></button></form>
+              <form method="post" onsubmit="return confirm('Silinsin mi?')"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="delete_plan"><input type="hidden" name="plan_id" value="<?= $pl['id'] ?>"><button class="btn btn-sm btn-danger"><i class="fa-solid fa-trash"></i></button></form>
             </div>
           </div>
         </div>
       </div>
-      <div class="modal fade" id="editPlan<?= $pl['id'] ?>" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="edit_plan"><input type="hidden" name="plan_id" value="<?= $pl['id'] ?>"><div class="modal-header"><h5 class="modal-title">Paketi Düzenle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">Paket Adı</label><input type="text" name="plan_name" class="form-control" value="<?= htmlspecialchars($pl['name']) ?>" required></div><div class="mb-3"><label class="form-label">Max Daire (0=Sınırsız)</label><input type="number" name="max_residents" class="form-control" value="<?= $pl['max_residents'] ?>"></div><div class="mb-3"><label class="form-label">Aylık Fiyat</label><input type="number" step="0.01" name="price_monthly" class="form-control" value="<?= $pl['price_monthly'] ?>" required></div><div class="mb-3"><label class="form-label">Yıllık Fiyat</label><input type="number" step="0.01" name="price_yearly" class="form-control" value="<?= $pl['price_yearly'] ?>"></div><div class="mb-3"><label class="form-label">Paket Açıklamaları (her satıra bir madde)</label><textarea name="features" class="form-control" rows="4"><?php $ef=json_decode($pl['features']??'[]',true); echo htmlspecialchars(is_array($ef)?implode("\n",$ef):''); ?></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-warning">Güncelle</button></div></form></div></div></div>
+      <div class="modal fade" id="editPlan<?= $pl['id'] ?>" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="edit_plan"><input type="hidden" name="plan_id" value="<?= $pl['id'] ?>"><div class="modal-header"><h5 class="modal-title">Paketi Düzenle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">Paket Adı</label><input type="text" name="plan_name" class="form-control" value="<?= htmlspecialchars($pl['name']) ?>" required></div><div class="mb-3"><label class="form-label">Max Daire (0=Sınırsız)</label><input type="number" name="max_residents" class="form-control" value="<?= $pl['max_residents'] ?>"></div><div class="mb-3"><label class="form-label">Aylık Fiyat</label><input type="number" step="0.01" name="price_monthly" class="form-control" value="<?= $pl['price_monthly'] ?>" required></div><div class="mb-3"><label class="form-label">Yıllık Fiyat</label><input type="number" step="0.01" name="price_yearly" class="form-control" value="<?= $pl['price_yearly'] ?>"></div><div class="mb-3"><label class="form-label">Paket Açıklamaları (her satıra bir madde)</label><textarea name="features" class="form-control" rows="4"><?php $ef=json_decode($pl['features']??'[]',true); echo htmlspecialchars(is_array($ef)?implode("\n",$ef):''); ?></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-warning">Güncelle</button></div></form></div></div></div>
       <?php endforeach; ?>
       <?php if(!$plans): ?><div class="col-12"><div class="empty-state"><i class="fa-solid fa-crown"></i><h4>Paket yok</h4></div></div><?php endif; ?>
     </div>
@@ -947,6 +951,7 @@ body.sidebar-hidden .main-content {
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
         <input type="hidden" name="action" value="add_site">
         <div class="modal-header">
           <h5 class="modal-title"><i class="fa-solid fa-plus me-2 text-accent"></i>Yeni Site Ekle</h5>
@@ -1010,6 +1015,7 @@ body.sidebar-hidden .main-content {
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
         <input type="hidden" name="action" value="add_manager">
         <div class="modal-header">
           <h5 class="modal-title"><i class="fa-solid fa-user-plus me-2 text-success"></i>Yönetici Ekle</h5>
@@ -1058,9 +1064,9 @@ body.sidebar-hidden .main-content {
 </div>
 
 <!-- Paket Ekle Modal -->
-<div class="modal fade" id="addPlanModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="add_plan"><div class="modal-header"><h5 class="modal-title">Yeni Paket</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">Paket Adı *</label><input type="text" name="plan_name" class="form-control" required></div><div class="mb-3"><label class="form-label">Max Daire (0=Sınırsız)</label><input type="number" name="max_residents" class="form-control" value="20"></div><div class="mb-3"><label class="form-label">Aylık Fiyat *</label><input type="number" step="0.01" name="price_monthly" class="form-control" required></div><div class="mb-3"><label class="form-label">Yıllık Fiyat</label><input type="number" step="0.01" name="price_yearly" class="form-control"></div><div class="mb-3"><label class="form-label">Paket Açıklamaları (her satıra bir madde)</label><textarea name="features" class="form-control" rows="4" placeholder="20 daireye kadar&#10;Temel aidat takibi"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Kaydet</button></div></form></div></div></div>
+<div class="modal fade" id="addPlanModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="add_plan"><div class="modal-header"><h5 class="modal-title">Yeni Paket</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">Paket Adı *</label><input type="text" name="plan_name" class="form-control" required></div><div class="mb-3"><label class="form-label">Max Daire (0=Sınırsız)</label><input type="number" name="max_residents" class="form-control" value="20"></div><div class="mb-3"><label class="form-label">Aylık Fiyat *</label><input type="number" step="0.01" name="price_monthly" class="form-control" required></div><div class="mb-3"><label class="form-label">Yıllık Fiyat</label><input type="number" step="0.01" name="price_yearly" class="form-control"></div><div class="mb-3"><label class="form-label">Paket Açıklamaları (her satıra bir madde)</label><textarea name="features" class="form-control" rows="4" placeholder="20 daireye kadar&#10;Temel aidat takibi"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Kaydet</button></div></form></div></div></div>
 <!-- Abonelik Aktifleştir Modal -->
-<div class="modal fade" id="addSubModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="activate_subscription"><div class="modal-header"><h5 class="modal-title">Abonelik Aktifleştir</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">Site</label><select name="site_id" class="form-select" required><?php foreach($sites as $s): ?><option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['name']) ?></option><?php endforeach; ?></select></div><div class="mb-3"><label class="form-label">Paket</label><select name="plan_id" class="form-select" required><?php foreach($plans as $p): ?><option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['name']) ?> - <?= money($p['price_monthly']) ?> ₺/ay</option><?php endforeach; ?></select></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Aktifleştir</button></div></form></div></div></div>
+<div class="modal fade" id="addSubModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="activate_subscription"><div class="modal-header"><h5 class="modal-title">Abonelik Aktifleştir</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">Site</label><select name="site_id" class="form-select" required><?php foreach($sites as $s): ?><option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['name']) ?></option><?php endforeach; ?></select></div><div class="mb-3"><label class="form-label">Paket</label><select name="plan_id" class="form-select" required><?php foreach($plans as $p): ?><option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['name']) ?> - <?= money($p['price_monthly']) ?> ₺/ay</option><?php endforeach; ?></select></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Aktifleştir</button></div></form></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
