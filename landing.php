@@ -296,14 +296,15 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
       <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" id="billToggle"><label class="form-check-label small muted" for="billToggle">Yıllık — 2 ay bedava</label></div>
     </div>
     <div class="row g-4">
+      <?php $featCount=0; foreach($plans as $i=>$p){ if(!empty($p['is_featured'])) $featCount++; } if(!$featCount&&isset($plans[1])) $plans[1]['is_featured']=1; ?>
       <?php foreach($plans as $i=>$p):
         $feat=json_decode($p['features']??'[]',true); if(!is_array($feat)) $feat=[];
-        $isFeat=($i==1); $monthly=(float)$p['price_monthly']; $yearly=(float)($p['price_yearly'] ?? $monthly*10);
-        $fit=['Küçük apartmanlar','Orta büyüklükte siteler','Profesyonel site yönetimleri']; $fitText=$fit[$i] ?? '';
+        $isFeat=!empty($p['is_featured']); $monthly=(float)$p['price_monthly']; $yearly=(float)($p['price_yearly'] ?? $monthly*10);
+        $fitText=$p['tagline']??'';
       ?>
       <div class="col-md-4"><div class="price-card p-4 <?= $isFeat?'featured':'' ?>">
         <?php if($isFeat): ?><span class="badge-pop">EN POPÜLER</span><?php endif; ?>
-        <div class="small fw-bold" style="color:#6366f1"><?= htmlspecialchars($fitText) ?></div>
+        <?php if($fitText!==''): ?><div class="small fw-bold" style="color:#6366f1"><?= htmlspecialchars($fitText) ?></div><?php endif; ?>
         <h5 class="fw-bold mt-1"><?= htmlspecialchars(strtoupper($p['name'])) ?></h5>
         <div class="small muted"><?= $p['max_residents']>0 ? (int)$p['max_residents'].' daireye kadar' : 'Sınırsız kullanım' ?></div>
         <div class="my-3"><span class="fs-2 fw-bold price-m" data-m="<?= number_format($monthly,0,',','.') ?>" data-y="<?= number_format($yearly,0,',','.') ?>"><?= number_format($monthly,0,',','.') ?> TL</span><span class="muted price-suf">/ay</span>

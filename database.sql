@@ -139,6 +139,8 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
     price_monthly DECIMAL(10,2) NOT NULL DEFAULT 0,
     price_yearly DECIMAL(10,2) NULL COMMENT 'Yıllık indirimli',
     features TEXT NULL COMMENT 'JSON: özellik listesi',
+    tagline VARCHAR(150) NULL COMMENT 'Landing kime uygun',
+    is_featured TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Landing one cikan',
     is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
