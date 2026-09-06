@@ -182,6 +182,12 @@ function landing_faqs($pdo) {
     try { return $pdo->query("SELECT * FROM landing_faq WHERE is_active=1 ORDER BY sort_order, id")->fetchAll(); }
     catch (Exception $e) { return []; }
 }
+function make_slug($t) {
+    $t = mb_strtolower(trim((string)$t), 'UTF-8');
+    $t = strtr($t, ['ç'=>'c','ğ'=>'g','ı'=>'i','ö'=>'o','ş'=>'s','ü'=>'u']);
+    $t = preg_replace('/[^a-z0-9]+/', '-', $t);
+    return trim($t, '-');
+}
 // --- ZIYARET ANALITIGI (ham IP saklanmaz) ---
 function track_visit($pdo, $page) {
     try {

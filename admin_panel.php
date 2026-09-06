@@ -183,6 +183,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $pdo->prepare("DELETE FROM landing_faq WHERE id=?")->execute([(int)($_POST['faq_id']??0)]); $success='SSS silindi.';
     } elseif ($action === 'landing_faq_toggle') {
         $pdo->prepare("UPDATE landing_faq SET is_active=1-is_active WHERE id=?")->execute([(int)($_POST['faq_id']??0)]); $success='SSS durumu değişti.';
+    } elseif ($action === 'blog_add') {
+        $title=trim($_POST['title']??''); $cat=in_array($_POST['category']??'', ['aidat','yonetici','yazilim','odeme'])?$_POST['category']:'aidat';
+        $slug=trim($_POST['slug']??''); if(!$slug) $slug=make_slug($title);
+        $exc=trim($_POST['excerpt']??''); $cont=$_POST['content']??''; $pub=!empty($_POST['is_published'])?1:0;
+        $mt=trim($_POST['meta_title']??''); $md=trim($_POST['meta_desc']??'');
+        if($title&&$cont&&$slug){ try{ $pdo->prepare("INSERT INTO blog_posts (slug,category,title,excerpt,content,meta_title,meta_desc,is_published,published_at) VALUES (?,?,?,?,?,?,?,?,CURDATE())")->execute([$slug,$cat,$title,$exc,$cont,$mt?:null,$md?:null,$pub]); $success='Yazı eklendi.'; }catch(PDOException $e){ $error='Bu slug zaten var, farklı bir slug girin.'; } }
+        else $error='Başlık, slug ve içerik zorunlu.';
+    } elseif ($action === 'blog_edit') {
+        $id=(int)($_POST['post_id']??0); $title=trim($_POST['title']??''); $cat=in_array($_POST['category']??'', ['aidat','yonetici','yazilim','odeme'])?$_POST['category']:'aidat';
+        $slug=trim($_POST['slug']??''); if(!$slug) $slug=make_slug($title);
+        $exc=trim($_POST['excerpt']??''); $cont=$_POST['content']??''; $pub=!empty($_POST['is_published'])?1:0;
+        $mt=trim($_POST['meta_title']??''); $md=trim($_POST['meta_desc']??'');
+        if($id&&$title&&$cont&&$slug){ try{ $pdo->prepare("UPDATE blog_posts SET slug=?,category=?,title=?,excerpt=?,content=?,meta_title=?,meta_desc=?,is_published=? WHERE id=?")->execute([$slug,$cat,$title,$exc,$cont,$mt?:null,$md?:null,$pub,$id]); $success='Yazı güncellendi.'; }catch(PDOException $e){ $error='Bu slug zaten var.'; } }
+    } elseif ($action === 'blog_delete') {
+        $pdo->prepare("DELETE FROM blog_posts WHERE id=?")->execute([(int)($_POST['post_id']??0)]); $success='Yazı silindi.';
+    } elseif ($action === 'blog_toggle') {
+        $pdo->prepare("UPDATE blog_posts SET is_published=1-is_published WHERE id=?")->execute([(int)($_POST['post_id']??0)]); $success='Yayın durumu değişti.';
     } elseif ($action === 'delete_lead') {
         $idx=(int)($_POST['lead_idx']??-1); $lf=__DIR__.'/backups/demo_requests.log';
         if(is_file($lf)){ $rows=file($lf,FILE_IGNORE_NEW_LINES); if(isset($rows[$idx])){ unset($rows[$idx]); file_put_contents($lf,implode("\n",$rows).(count($rows)?"\n":'')); $success='Talep silindi.'; } else $error='Kayıt bulunamadı.'; }
@@ -205,6 +222,7 @@ if(is_file($leadLog)){ $raw=file($leadLog); foreach($raw as $idx=>$rl){ $ln=trim
 $LS=landing_settings_all($pdo);
 try{ $allLandingMenus=$pdo->query("SELECT * FROM landing_menu ORDER BY sort_order,id")->fetchAll(); }catch(PDOException $e){ $allLandingMenus=[]; }
 try{ $allLandingFaqs=$pdo->query("SELECT * FROM landing_faq ORDER BY sort_order,id")->fetchAll(); }catch(PDOException $e){ $allLandingFaqs=[]; }
+try{ $allBlogPosts=$pdo->query("SELECT * FROM blog_posts ORDER BY published_at DESC, id DESC")->fetchAll(); }catch(PDOException $e){ $allBlogPosts=[]; }
 
 // İstatistikler
 $totalSites    = count($sites);
@@ -314,6 +332,9 @@ body.sidebar-hidden .main-content {
     <a href="?page=analytics" class="nav-link <?= $page==='analytics'?'active':'' ?>">
       <i class="fa-solid fa-chart-line"></i> Ziyaretçiler
     </a>
+    <a href="?page=blog" class="nav-link <?= $page==='blog'?'active':'' ?>">
+      <i class="fa-solid fa-newspaper"></i> Blog
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -336,8 +357,8 @@ body.sidebar-hidden .main-content {
 
       <span class="topbar-title">
         <?php
-        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler','payments'=>'Ödemeler','leads'=>'Demo Talepleri','landing'=>'Site İçeriği','analytics'=>'Ziyaretçiler'];
-        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card','payments'=>'money-bill-transfer','leads'=>'envelope-open-text','landing'=>'globe','analytics'=>'chart-line'];
+        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler','payments'=>'Ödemeler','leads'=>'Demo Talepleri','landing'=>'Site İçeriği','analytics'=>'Ziyaretçiler','blog'=>'Blog'];
+        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card','payments'=>'money-bill-transfer','leads'=>'envelope-open-text','landing'=>'globe','analytics'=>'chart-line','blog'=>'newspaper'];
         echo '<i class="fa-solid fa-'. ($iconMap[$page] ?? 'gauge-high'). ' me-2 text-accent"></i>';
         echo $titles[$page] ?? 'Admin';
         ?>
@@ -941,6 +962,33 @@ body.sidebar-hidden .main-content {
       <?php endforeach; ?>
       <?php if(!$avRef): ?><tr><td colspan="2" class="text-center py-4 text-muted">Henüz kaynak verisi yok</td></tr><?php endif; ?>
     </tbody></table></div></div>
+    <?php endif; ?>
+
+    <?php elseif ($page === 'blog'): ?>
+    <div class="page-header d-flex justify-content-between align-items-start">
+      <div><h1><i class="fa-solid fa-newspaper me-2 text-accent"></i>Blog</h1><p>/blog sayfasındaki SEO yazıları — <a href="blog.php" target="_blank">blogu görüntüle</a></p></div>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBlogModal"><i class="fa-solid fa-plus me-2"></i>Yeni Yazı</button>
+    </div>
+    <div class="card"><div class="card-body p-0"><table class="table mb-0"><thead><tr><th>Başlık</th><th>Kategori</th><th>Durum</th><th>Görüntülenme</th><th>Tarih</th><th class="text-end">İşlem</th></tr></thead><tbody>
+      <?php $blogCats=['aidat'=>'Aidat','yonetici'=>'Yönetici','yazilim'=>'Yazılım','odeme'=>'Ödeme']; ?>
+      <?php foreach($allBlogPosts as $bp): ?>
+      <tr>
+        <td class="fw-700"><a href="blog-detay.php?yazi=<?= htmlspecialchars($bp['slug']) ?>" target="_blank"><?= htmlspecialchars($bp['title']) ?></a><div class="small text-muted">/<?= htmlspecialchars($bp['slug']) ?></div></td>
+        <td><span class="badge bg-secondary"><?= htmlspecialchars($blogCats[$bp['category']]??$bp['category']) ?></span></td>
+        <td><span class="badge <?= $bp['is_published']?'bg-success':'bg-secondary' ?>"><?= $bp['is_published']?'Yayında':'Taslak' ?></span></td>
+        <td><?= (int)$bp['views'] ?></td>
+        <td class="small text-muted"><?= htmlspecialchars($bp['published_at']?:date('d.m.Y',strtotime($bp['created_at']))) ?></td>
+        <td class="text-end" style="white-space:nowrap">
+          <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editBlog<?= $bp['id'] ?>"><i class="fa-solid fa-pen"></i></button>
+          <form method="post" style="display:inline"><input type="hidden" name="action" value="blog_toggle"><input type="hidden" name="post_id" value="<?= $bp['id'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><button class="btn btn-sm btn-warning" title="Yayınla/Taslağa al"><i class="fa-solid fa-eye"></i></button></form>
+          <form method="post" style="display:inline" onsubmit="return confirm('Yazı silinsin mi?')"><input type="hidden" name="action" value="blog_delete"><input type="hidden" name="post_id" value="<?= $bp['id'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><button class="btn btn-sm btn-danger"><i class="fa-solid fa-trash"></i></button></form>
+        </td>
+      </tr>
+      <div class="modal fade" id="editBlog<?= $bp['id'] ?>" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="blog_edit"><input type="hidden" name="post_id" value="<?= $bp['id'] ?>"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><div class="modal-header"><h5 class="modal-title">Yazıyı Düzenle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-8"><label class="form-label">Başlık *</label><input type="text" name="title" class="form-control" value="<?= htmlspecialchars($bp['title']) ?>" required></div><div class="col-md-4"><label class="form-label">Kategori</label><select name="category" class="form-select"><?php foreach($blogCats as $ck=>$cl): ?><option value="<?= $ck ?>" <?= $bp['category']===$ck?'selected':'' ?>><?= $cl ?></option><?php endforeach; ?></select></div><div class="col-md-8"><label class="form-label">Slug (boşsa başlıktan üretilir)</label><input type="text" name="slug" class="form-control" value="<?= htmlspecialchars($bp['slug']) ?>"></div><div class="col-md-4"><label class="form-label">Yayın</label><div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_published" value="1" <?= $bp['is_published']?'checked':'' ?>><label class="form-check-label">Yayında</label></div></div><div class="col-12"><label class="form-label">Özet</label><input type="text" name="excerpt" class="form-control" value="<?= htmlspecialchars($bp['excerpt']??'') ?>"></div><div class="col-12"><label class="form-label">İçerik (HTML) *</label><textarea name="content" class="form-control" rows="10" required><?= htmlspecialchars($bp['content']) ?></textarea></div><div class="col-md-6"><label class="form-label">SEO Başlık (boşsa başlık)</label><input type="text" name="meta_title" class="form-control" value="<?= htmlspecialchars($bp['meta_title']??'') ?>"></div><div class="col-md-6"><label class="form-label">SEO Açıklama</label><input type="text" name="meta_desc" class="form-control" value="<?= htmlspecialchars($bp['meta_desc']??'') ?>"></div></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-warning">Güncelle</button></div></form></div></div></div>
+      <?php endforeach; ?>
+      <?php if(!$allBlogPosts): ?><tr><td colspan="6" class="text-center py-4 text-muted">Henüz yazı yok</td></tr><?php endif; ?>
+    </tbody></table></div></div>
+    <div class="modal fade" id="addBlogModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="blog_add"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><div class="modal-header"><h5 class="modal-title">Yeni Yazı</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-8"><label class="form-label">Başlık *</label><input type="text" name="title" class="form-control" required></div><div class="col-md-4"><label class="form-label">Kategori</label><select name="category" class="form-select"><option value="aidat">Aidat</option><option value="yonetici">Yönetici</option><option value="yazilim">Yazılım</option><option value="odeme">Ödeme</option></select></div><div class="col-md-8"><label class="form-label">Slug (boşsa otomatik)</label><input type="text" name="slug" class="form-control"></div><div class="col-md-4"><label class="form-label">Yayın</label><div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_published" value="1" checked><label class="form-check-label">Yayında</label></div></div><div class="col-12"><label class="form-label">Özet</label><input type="text" name="excerpt" class="form-control"></div><div class="col-12"><label class="form-label">İçerik (HTML) *</label><textarea name="content" class="form-control" rows="10" required></textarea></div></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Kaydet</button></div></form></div></div></div>
     <?php endif; ?>
 
   </div><!-- /content-body -->

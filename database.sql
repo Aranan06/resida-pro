@@ -339,3 +339,22 @@ CREATE TABLE IF NOT EXISTS page_views (
     INDEX idx_page_time (page, created_at),
     INDEX idx_visitor (visitor_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Blog yazilari (SEO icerik alani /blog)
+CREATE TABLE IF NOT EXISTS blog_posts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(200) NOT NULL UNIQUE,
+    category VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    excerpt VARCHAR(500) NULL,
+    content MEDIUMTEXT NOT NULL,
+    meta_title VARCHAR(255) NULL,
+    meta_desc VARCHAR(300) NULL,
+    is_published TINYINT(1) NOT NULL DEFAULT 1,
+    views INT NOT NULL DEFAULT 0,
+    published_at DATE NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_cat_pub (category, is_published),
+    INDEX idx_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
