@@ -303,6 +303,7 @@ INSERT IGNORE INTO landing_settings (k, v) VALUES
 ('cta_primary_btn', 'Ücretsiz Başlayın'),
 ('cta_box_title', '15 dakikada canlı tanıtım'),
 ('contact_email', 'info@residapro.com'),
+('social_instagram', 'https://instagram.com/residapro'),
 ('contact_phone', '0532 XXX XX XX'),
 ('footer_text', 'RESIDA PRO • Apartman ve site yönetim programı'),
 ('nav_logo', 'assets/img/resida-pro-logo2.png'),

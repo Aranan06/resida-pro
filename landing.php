@@ -357,7 +357,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
 <footer class="py-4 border-top bg-white">
   <div class="container d-flex flex-wrap gap-3 justify-content-between small muted">
     <span>© <?= date('Y') ?> <?= htmlspecialchars($T('footer_text','RESIDA PRO • Apartman ve site yönetim programı')) ?></span>
-    <span class="d-flex gap-3"><a href="kvkk.php" class="link-secondary text-decoration-none">KVKK</a><a href="index.php" class="link-secondary text-decoration-none">Giriş</a></span>
+    <span class="d-flex gap-3 align-items-center"><a href="kvkk.php" class="link-secondary text-decoration-none">KVKK</a><a href="index.php" class="link-secondary text-decoration-none">Giriş</a><?php $ig=$T('social_instagram','https://instagram.com/residapro'); if($ig): ?><a href="<?= htmlspecialchars($ig) ?>" target="_blank" title="Instagram'da takip edin" style="color:#E1306C;font-size:1.15rem"><i class="fa-brands fa-instagram"></i></a><?php endif; ?></span>
   </div>
 </footer>
 

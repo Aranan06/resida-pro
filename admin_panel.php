@@ -810,7 +810,7 @@ body.sidebar-hidden .main-content {
     </div>
     <?php
     $landingFields=[
-      'Üst Menü ve İletişim'=>['contact_email'=>'E-posta','contact_phone'=>'Telefon','footer_text'=>'Alt bilgi yazısı'],
+      'Üst Menü ve İletişim'=>['contact_email'=>'E-posta','contact_phone'=>'Telefon','social_instagram'=>'Instagram adresi','footer_text'=>'Alt bilgi yazısı'],
       'Hero (ilk ekran)'=>['hero_badge'=>'Rozet yazısı','hero_title_a'=>'Başlık 1. satır','hero_title_b'=>'Başlık 2. satır (renkli)','hero_subtitle'=>'Alt açıklama|textarea','hero_primary_btn'=>'Birincil buton','hero_secondary_btn'=>'İkincil buton','hero_note'=>'Alt not'],
       'Bölüm Başlıkları'=>['problem_title'=>'Problem başlığı','problem_subtitle'=>'Problem alt yazı|textarea','solution_title'=>'Çözüm başlığı','solution_subtitle'=>'Çözüm alt yazı|textarea','payment_title'=>'Ödeme başlığı','payment_text'=>'Ödeme açıklaması|textarea','migration_title'=>'Geçiş başlığı','migration_subtitle'=>'Geçiş alt yazı|textarea'],
       'Ekranlar ve Fiyatlar'=>['screens_title'=>'Ekranlar başlığı','screens_subtitle'=>'Ekranlar alt yazı|textarea','screens_side_title'=>'Telefon kutusu başlığı','screens_side_text'=>'Telefon kutusu yazı|textarea','pricing_title'=>'Fiyat başlığı','pricing_subtitle'=>'Fiyat alt yazı|textarea','pricing_note'=>'Fiyat alt notu'],
