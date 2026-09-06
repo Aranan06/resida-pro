@@ -317,7 +317,8 @@ INSERT IGNORE INTO landing_menu (id, label, url, sort_order, is_active) VALUES
 (2, 'Ödeme', '#odeme', 2, 1),
 (3, 'Ekranlar', '#ekranlar', 3, 1),
 (4, 'Fiyatlar', '#fiyatlar', 4, 1),
-(5, 'SSS', '#sss', 5, 1);
+(5, 'SSS', '#sss', 5, 1),
+(6, 'Blog', 'blog.php', 6, 1);
 INSERT IGNORE INTO landing_faq (id, question, answer, sort_order, is_active) VALUES
 (1, 'RESIDA nedir?', 'RESIDA, apartman ve siteler için aidat takip programıdır. Aidat, gider, tahsilat, dekont, duyuru ve sakin yönetimini tek panelde toplar.', 1, 1),
 (2, 'RESIDA ile ödeme nasıl alınır?', 'Sakin havale yapıp dekont yükler, yönetici tek dokunuşla onaylar. Kartla ödemede tutar doğrudan site hesabına yönlendirilir.', 2, 1),
