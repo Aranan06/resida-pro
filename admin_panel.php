@@ -962,7 +962,6 @@ body.sidebar-hidden .main-content {
       <?php endforeach; ?>
       <?php if(!$avRef): ?><tr><td colspan="2" class="text-center py-4 text-muted">Henüz kaynak verisi yok</td></tr><?php endif; ?>
     </tbody></table></div></div>
-    <?php endif; ?>
 
     <?php elseif ($page === 'blog'): ?>
     <div class="page-header d-flex justify-content-between align-items-start">
