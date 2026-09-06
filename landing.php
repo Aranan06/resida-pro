@@ -309,7 +309,7 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#0f172a;o
         <div class="my-3"><span class="fs-2 fw-bold price-m" data-m="<?= number_format($monthly,0,',','.') ?>" data-y="<?= number_format($yearly,0,',','.') ?>"><?= number_format($monthly,0,',','.') ?> TL</span><span class="muted price-suf">/ay</span>
         <div class="small muted price-sub" data-m="Aylık ödeme" data-y="Yıllık peşin — ayda <?= number_format($yearly/12,0,',','.') ?> TL'ye gelir">Aylık ödeme</div></div>
         <ul class="small muted ps-3 mb-3"><?php foreach($feat as $f): ?><li><?= htmlspecialchars($f) ?></li><?php endforeach; ?></ul>
-        <button class="btn <?= $isFeat?'btn-primary':'btn-outline-primary' ?> w-100" data-bs-toggle="modal" data-bs-target="#demoModal">Ücretsiz Başlayın</button>
+        <button class="btn <?= $isFeat?'btn-primary':'btn-outline-primary' ?> w-100" data-bs-toggle="modal" data-bs-target="#demoModal"><?= htmlspecialchars($T('pricing_btn','Ücretsiz Başlayın')) ?></button>
       </div></div>
       <?php endforeach; ?>
     </div>
