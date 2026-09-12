@@ -200,6 +200,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } elseif ($a === 'delete_due') {
             $pdo->prepare("DELETE FROM dues WHERE id=? AND site_id=?")->execute([$_POST['due_id'],$mySiteId]);
             $success='Aidat silindi.';
+        } elseif ($a === 'approve_due_payment') {
+            require_once 'includes/PaymentGateway.php';
+            $pid=(int)($_POST['payment_id']??0);
+            $chk=$pdo->prepare("SELECT site_id,status FROM payments WHERE id=?"); $chk->execute([$pid]); $prow=$chk->fetch();
+            if(!$prow||(int)$prow['site_id']!==$mySiteId||$prow['status']!=='pending'){ $error='Ödeme bulunamadı.'; }
+            else { try{ approvePayment($pdo,$pid,$user['id']); $success='Dekont onaylandı, aidat ödendi olarak işlendi.'; }catch(Exception $e){ $error=$e->getMessage(); } }
+        } elseif ($a === 'reject_due_payment') {
+            require_once 'includes/PaymentGateway.php';
+            $pid=(int)($_POST['payment_id']??0);
+            $chk=$pdo->prepare("SELECT site_id,status FROM payments WHERE id=?"); $chk->execute([$pid]); $prow=$chk->fetch();
+            if(!$prow||(int)$prow['site_id']!==$mySiteId||$prow['status']!=='pending'){ $error='Ödeme bulunamadı.'; }
+            else { rejectPayment($pdo,$pid,$user['id'],'Yönetici reddi'); $success='Dekont reddedildi.'; }
         } elseif ($a === 'save_due_setting') {
             $yr=(int)$_POST['year']; $ma=$_POST['monthly_amount'];
             if ($yr&&$ma) { saveDueSetting($pdo,$mySiteId,$yr,$ma); $success="$yr yılı aidat ücreti kaydedildi."; }
@@ -437,6 +449,8 @@ $residaIban = $_ENV['RESIDA_BANK_IBAN'] ?? $_ENV['BANK_IBAN'] ?? 'TR00 0000 0000
 $residaHolder = $_ENV['RESIDA_BANK_HOLDER'] ?? $_ENV['BANK_HOLDER'] ?? 'RESIDA PRO';
 $pendingSubPayments = $pdo->prepare("SELECT p.*, pl.name as plan_name FROM payments p LEFT JOIN site_subscriptions ss ON p.subscription_id=ss.id LEFT JOIN subscription_plans pl ON ss.plan_id=pl.id WHERE p.site_id=? AND p.subscription_id IS NOT NULL AND p.status='pending' ORDER BY p.created_at DESC");
 $pendingSubPayments->execute([$mySiteId]); $pendingSubPayments = $pendingSubPayments->fetchAll();
+$pendingDues = $pdo->prepare("SELECT p.*, u.name as user_name, u.apartment_no, u.floor, d.description as due_desc, d.due_date FROM payments p LEFT JOIN users u ON p.user_id=u.id LEFT JOIN dues d ON p.due_id=d.id WHERE p.site_id=? AND p.status='pending' AND p.due_id IS NOT NULL ORDER BY p.created_at DESC");
+$pendingDues->execute([$mySiteId]); $pendingDues = $pendingDues->fetchAll();
 
 $pdo->exec("ALTER TABLE expenses MODIFY category VARCHAR(100)");
 $defaultCats = ['Bakım', 'Temizlik', 'Güvenlik', 'Elektrik', 'Su', 'Doğalgaz', 'Asansör', 'Sigorta', 'Diğer'];
@@ -880,6 +894,24 @@ $hasDebt=count(array_filter($rDues,fn($d)=>!$d['paid']))>0; ?>
 
 <?php if($dueSetting): ?>
 <div class="alert alert-info mb-3"><i class="fa-solid fa-info-circle me-2"></i><?= $curYear ?> yılı aylık aidat ücreti: <strong><?= money($dueSetting['monthly_amount']) ?> ₺</strong></div>
+<?php endif; ?>
+
+<?php if($pendingDues): ?>
+<div class="card mb-4 border-warning"><div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center"><span class="fw-700"><i class="fa-solid fa-clock me-2"></i>Onay Bekleyen Dekontlar (<?= count($pendingDues) ?>)</span></div><div class="card-body p-0"><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Sakin</th><th>Aidat</th><th>Tutar</th><th>Dekont</th><th>Tarih</th><th class="text-end">İşlem</th></tr></thead><tbody>
+<?php foreach($pendingDues as $pp): ?>
+<tr>
+  <td class="fw-700"><?= htmlspecialchars($pp['user_name'] ?? '-') ?><div class="small text-muted"><?= htmlspecialchars($pp['floor'] ?? '') ?>. Kat / <?= htmlspecialchars($pp['apartment_no'] ?? '') ?></div></td>
+  <td class="small"><?= htmlspecialchars($pp['due_desc'] ?? '-') ?><br><span class="text-muted">Vade: <?= date_tr($pp['due_date'] ?? null) ?></span></td>
+  <td class="fw-700 money"><?= money($pp['amount']) ?> ₺</td>
+  <td><?php if(!empty($pp['receipt_path'])): ?><a href="<?= htmlspecialchars($pp['receipt_path']) ?>" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-file me-1"></i>Gör</a><?php else: ?><span class="text-muted small">Yok</span><?php endif; ?></td>
+  <td class="small"><?= datetime_tr($pp['created_at']) ?></td>
+  <td class="text-end" style="white-space:nowrap">
+    <form method="post" style="display:inline"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="approve_due_payment"><input type="hidden" name="payment_id" value="<?= $pp['id'] ?>"><button class="btn btn-sm btn-success" onclick="return confirm('Onaylansın mı? Aidat ödendi sayılacak.')"><i class="fa-solid fa-check me-1"></i>Onayla</button></form>
+    <form method="post" style="display:inline" onsubmit="return confirm('Reddedilsin mi?')"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><input type="hidden" name="action" value="reject_due_payment"><input type="hidden" name="payment_id" value="<?= $pp['id'] ?>"><button class="btn btn-sm btn-danger"><i class="fa-solid fa-xmark"></i></button></form>
+  </td>
+</tr>
+<?php endforeach; ?>
+</tbody></table></div></div></div>
 <?php endif; ?>
 
 <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
