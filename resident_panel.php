@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'pay_d
     else {
         $pen = calculatePenalty($due, $penaltySettings);
         $total = (float)$due['amount'] + $pen;
-        $gw = getPaymentGateway($pdo, 'iyzico');
+        $gw = getPaymentGateway($pdo, 'iyzico', $mySiteId);
         $res = $gw->createPayment([
             'site_id' => $mySiteId,
             'user_id' => $user['id'],
@@ -759,7 +759,8 @@ $darkModeCookie = $_COOKIE['darkMode'] ?? 'light';
                 <?php
                 // Aidat IBAN'ı SİTE'nin kendi IBAN'ı (yönetim hesabı) — sana değil
                 $hasSiteIban = !empty($siteIban);
-                $iyzicoEnabled = !empty($_ENV['IYZICO_API_KEY']) && $_ENV['IYZICO_API_KEY'] !== 'sandbox-api-key';
+                // Kartla ödeme: SADECE site kendi iyzico hesabını tanımladıysa görünür
+                $iyzicoEnabled = IyzicoGateway::forSite($pdo, $mySiteId)->isSiteKeys();
                 ?>
                 <?php if($hasSiteIban): ?>
                 <!-- IBAN Bilgi Kartı - Siteye özel -->

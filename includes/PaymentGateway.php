@@ -53,6 +53,7 @@ class IyzicoGateway implements PaymentGatewayInterface {
     private $secretKey;
     private $baseUrl;
     private $enabled;
+    private $siteMode = false;
 
     public function __construct($pdo) {
         $this->pdo = $pdo;
@@ -62,8 +63,28 @@ class IyzicoGateway implements PaymentGatewayInterface {
         $this->enabled = !empty($this->apiKey) && !empty($this->secretKey);
     }
 
+    // Sitenin KENDİ iyzico hesabı: aidat ödemesi doğrudan site hesabına düşer.
+    // Site anahtarı yoksa merkezi (.env) anahtarlara geri döner (abonelik ödemeleri için).
+    public static function forSite($pdo, $siteId) {
+        $gw = new self($pdo);
+        try {
+            $s = $pdo->prepare("SELECT iyzico_api_key, iyzico_secret_key, iyzico_enabled FROM sites WHERE id=?");
+            $s->execute([$siteId]);
+            $row = $s->fetch();
+            if ($row && !empty($row['iyzico_enabled']) && !empty(trim($row['iyzico_api_key'] ?? '')) && !empty(trim($row['iyzico_secret_key'] ?? ''))) {
+                $gw->apiKey = trim($row['iyzico_api_key']);
+                $gw->secretKey = trim($row['iyzico_secret_key']);
+                $gw->baseUrl = 'https://api.iyzipay.com';
+                $gw->enabled = true;
+                $gw->siteMode = true;
+            }
+        } catch (Exception $e) { /* kolon yoksa sessizce merkezi kullan */ }
+        return $gw;
+    }
+
     public function getName(): string { return 'iyzico'; }
     public function isEnabled(): bool { return $this->enabled; }
+    public function isSiteKeys(): bool { return $this->siteMode; }
 
     public function createPayment(array $data): array {
         // Placeholder anahtar kontrolü
@@ -71,7 +92,9 @@ class IyzicoGateway implements PaymentGatewayInterface {
         if (!$this->enabled || $isPlaceholder) {
             return [
                 'success' => false,
-                'message' => 'Kartla ödeme şu an aktif değil. Yönetici IBAN ile havale yöntemini kullanın. (iyzico için canlı anahtar gerekli – .env güncelleyin)'
+                'message' => $this->siteMode
+                    ? 'Kartla ödeme şu an aktif değil. Havale / EFT ile ödemeyi tamamlayın.'
+                    : 'Kartla ödeme şu an aktif değil. Yönetici IBAN ile havale yöntemini kullanın. (iyzico için canlı anahtar gerekli – .env güncelleyin)'
             ];
         }
 
@@ -189,8 +212,12 @@ class IyzicoGateway implements PaymentGatewayInterface {
 }
 
 // ─── Fabrika ───
-function getPaymentGateway($pdo, $type = 'manual'): PaymentGatewayInterface {
-    if ($type === 'iyzico') return new IyzicoGateway($pdo);
+// $siteId verilirse sitenin KENDİ iyzico hesabı kullanılır (yoksa merkezi).
+function getPaymentGateway($pdo, $type = 'manual', $siteId = null): PaymentGatewayInterface {
+    if ($type === 'iyzico') {
+        if ($siteId) return IyzicoGateway::forSite($pdo, $siteId);
+        return new IyzicoGateway($pdo);
+    }
     return new ManualGateway($pdo);
 }
 

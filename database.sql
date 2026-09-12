@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS sites (
     penalty_rate DECIMAL(5,2) NOT NULL DEFAULT 5.00 COMMENT 'Aylık gecikme oranı %',
     penalty_grace_days INT NOT NULL DEFAULT 5 COMMENT 'Vade sonrası hoşgörü günü',
     iyzico_submerchant_key VARCHAR(100) NULL COMMENT 'iyzico alt üye anahtarı (pazaryeri)',
+    iyzico_api_key VARCHAR(100) NULL COMMENT 'Sitenin kendi iyzico API anahtari',
+    iyzico_secret_key VARCHAR(100) NULL COMMENT 'Sitenin kendi iyzico gizli anahtari',
+    iyzico_enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Site kartli odeme acik mi',
     created_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
