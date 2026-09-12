@@ -22,9 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->execute([$username]);
-    $loginUser = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Sakinler telefonla da girebilir (yönetici/admin kullanıcı adıyla)
+    $loginUser = findLoginUser($pdo, $username);
 
     $isValid = $loginUser && password_verify($_POST['password'], $loginUser['password']);
     recordLoginAttempt($pdo, $ip, $username, $isValid ? 1 : 0);

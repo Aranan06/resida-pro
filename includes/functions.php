@@ -161,6 +161,25 @@ function money($v) { return number_format($v, 2, ',', '.'); }
 function date_tr($d) { return $d ? date('d.m.Y', strtotime($d)) : '-'; }
 function datetime_tr($d) { return $d ? date('d.m.Y H:i', strtotime($d)) : '-'; }
 function avatarLetter($name) { return mb_strtoupper(mb_substr(trim($name), 0, 1, 'UTF-8'), 'UTF-8'); }
+// Telefonu rakama indirger (05xx, +90, boşluklu yazımlar aynı sayılır)
+function phone_digits($s) { return preg_replace('/\D/', '', (string)$s); }
+// Sakin girişi: önce kullanıcı adı, olmazsa telefon (son 10 hanesi eşleşen tek kayıt)
+function findLoginUser($pdo, $input) {
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+    $stmt->execute([$input]);
+    $u = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($u) return $u;
+    $digits = phone_digits($input);
+    if (strlen($digits) < 10) return null;
+    $tail = substr($digits, -10);
+    $all = $pdo->query("SELECT * FROM users WHERE role='resident' AND phone IS NOT NULL AND phone<>''")->fetchAll(PDO::FETCH_ASSOC);
+    $cands = [];
+    foreach ($all as $r) {
+        $p = phone_digits($r['phone'] ?? '');
+        if (strlen($p) >= 10 && substr($p, -10) === $tail) $cands[] = $r;
+    }
+    return count($cands) === 1 ? $cands[0] : null;
+}
 // --- LANDING CMS ---
 function landing_settings_all($pdo) {
     static $cache = null;

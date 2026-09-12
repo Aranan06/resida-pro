@@ -64,7 +64,7 @@ $csrf  = generateCsrfToken();
         } elseif ($error === 'csrf') {
             echo 'Güvenlik doğrulaması başarısız. Lütfen tekrar deneyin.';
         } else {
-            echo 'Kullanıcı adı veya şifre hatalı.';
+            echo 'Giriş bilgisi veya şifre hatalı. (Sakinler telefon numarasıyla girebilir.)';
         }
       ?>
     </div>
@@ -73,12 +73,12 @@ $csrf  = generateCsrfToken();
     <form method="post" action="dashboard.php">
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
       <div class="mb-3">
-        <label class="form-label">Kullanıcı Adı</label>
-        <div class="input-group">
-          <span class="input-group-text" style="background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08);color:#94a3b8;">
-            <i class="fa-solid fa-user"></i>
-          </span>
-          <input type="text" name="username" class="form-control" placeholder="kullanici_adi" required autofocus>
+          <label class="form-label">Kullanıcı Adı veya Telefon</label>
+          <div class="input-group">
+            <span class="input-group-text" style="background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08);color:#94a3b8;">
+              <i class="fa-solid fa-user"></i>
+            </span>
+            <input type="text" name="username" class="form-control" placeholder="kullanici_adi veya 05xx xxx xx xx" required autofocus>
         </div>
       </div>
       <div class="mb-4">

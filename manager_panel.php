@@ -40,7 +40,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $bc=$pdo->prepare("SELECT COUNT(*) FROM blocks WHERE site_id=?"); $bc->execute([$mySiteId]); $siteHasBlocks=(int)$bc->fetchColumn()>0;
             if($blk){ $vc=$pdo->prepare("SELECT COUNT(*) FROM blocks WHERE id=? AND site_id=?"); $vc->execute([$blk,$mySiteId]); if(!(int)$vc->fetchColumn()) $blk=null; }
 
-            if ($n&&$fl&&$apt&&$un&&$pw&&(!$siteHasBlocks||$blk)) {
+            // Telefon giriş anahtarıdır: zorunlu ve benzersiz olmalı
+            $phDigits = phone_digits($ph);
+            $phDup = false;
+            if (strlen($phDigits) >= 10) {
+                $allPh = $pdo->prepare("SELECT phone FROM users WHERE role='resident' AND phone IS NOT NULL AND phone<>''");
+                $allPh->execute();
+                foreach ($allPh->fetchAll(PDO::FETCH_COLUMN) as $ep) {
+                    $ed = phone_digits($ep);
+                    if (strlen($ed) >= 10 && substr($ed, -10) === substr($phDigits, -10)) { $phDup = true; break; }
+                }
+            }
+            if ($n&&$fl&&$apt&&$un&&$pw&&$ph&&(!$siteHasBlocks||$blk)&&!$phDup) {
                 $limitStmt = $pdo->prepare("SELECT max_residents FROM sites WHERE id = ?");
                 $limitStmt->execute([$mySiteId]);
                 $maxResidents = (int)$limitStmt->fetchColumn();
@@ -57,7 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $success='Daire sakini eklendi.';
                 }
             } else {
-                $error=$siteHasBlocks&&!$blk ? 'Blok seçimi zorunlu.' : 'Zorunlu alanları doldurun.';
+                if (!$ph) $error = 'Telefon zorunlu (sakin bu numarayla giriş yapacak).';
+                elseif ($phDup) $error = 'Bu telefon başka bir sakinde kayıtlı.';
+                elseif ($siteHasBlocks&&!$blk) $error = 'Blok seçimi zorunlu.';
+                else $error = 'Zorunlu alanları doldurun.';
             }
         
         } elseif ($a === 'edit_resident') {
@@ -65,12 +79,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $addr=trim($_POST['address']??''); $ph=trim($_POST['phone']??''); $em=trim($_POST['email']??''); $nt=trim($_POST['notes']??'');
             $blk=!empty($_POST['block_id']) ? (int)$_POST['block_id'] : null;
             if($blk){ $vc=$pdo->prepare("SELECT COUNT(*) FROM blocks WHERE id=? AND site_id=?"); $vc->execute([$blk,$mySiteId]); if(!(int)$vc->fetchColumn()) $blk=null; }
+            $phD = phone_digits($ph);
+            if (strlen($phD) >= 10) {
+                $ec=$pdo->prepare("SELECT id, phone FROM users WHERE role='resident' AND id!=? AND phone IS NOT NULL AND phone<>''"); $ec->execute([$id]);
+                foreach($ec->fetchAll() as $er){ $ed=phone_digits($er['phone']??''); if(strlen($ed)>=10 && substr($ed,-10)===substr($phD,-10)){ $error='Bu telefon başka bir sakinde kayıtlı.'; break; } }
+            }
+            if (empty($error)) {
             $sql="UPDATE users SET name=?,block_id=?,floor=?,apartment_no=?,address=?,phone=?,email=?,notes=?";
             $params=[$n,$blk,$fl,$apt,$addr,$ph,$em,$nt];
             if (!empty($_POST['password'])) { $sql.=",password=?"; $params[]=password_hash($_POST['password'],PASSWORD_BCRYPT); }
             $sql.=" WHERE id=? AND site_id=?"; $params[]=$id; $params[]=$mySiteId;
             $pdo->prepare($sql)->execute($params);
             $success='Sakin bilgileri güncellendi.';
+            }
         } elseif ($a === 'delete_resident') {
             $pdo->prepare("DELETE FROM users WHERE id=? AND site_id=?")->execute([$_POST['user_id'],$mySiteId]);
             $success='Sakin silindi.';
@@ -119,12 +140,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             $hasBlocks=count($bmap)>0;
                             $limS=$pdo->prepare("SELECT max_residents FROM sites WHERE id=?"); $limS->execute([$mySiteId]); $maxR=(int)$limS->fetchColumn();
                             $cntS=$pdo->prepare("SELECT COUNT(*) FROM users WHERE site_id=? AND role='resident'"); $cntS->execute([$mySiteId]); $cur=(int)$cntS->fetchColumn();
-                            $seenUsernames=[];
+                            $seenUsernames=[]; $seenPhones=[];
                             foreach($rows as $rn=>$line){
                                 $f=str_getcsv($line,$delim); $ln=$rn+2;
                                 $v=function($c) use($f){ return trim($f[$c]??''); };
                                 $nm=$v($cName); $fl=$cFloor!==null?$v($cFloor):''; $ap=$v($cApt);
+                                $phn=$cPhone!==null?$v($cPhone):''; $phnD=phone_digits($phn);
                                 if(!$nm||!$ap){ $importReport['skipped'][]="Satır $ln: Ad Soyad ve Daire No zorunlu."; continue; }
+                                if(strlen($phnD)<10){ $importReport['skipped'][]="Satır $ln: Telefon zorunlu (sakin giriş için)."; continue; }
+                                $phDup=false;
+                                $allPh=$pdo->prepare("SELECT phone FROM users WHERE role='resident' AND phone IS NOT NULL AND phone<>''"); $allPh->execute();
+                                foreach($allPh->fetchAll(PDO::FETCH_COLUMN) as $ep){ $ed=phone_digits($ep); if(strlen($ed)>=10&&substr($ed,-10)===substr($phnD,-10)){ $phDup=true; break; } }
+                                if($phDup||in_array(substr($phnD,-10),$seenPhones??[])){ $importReport['skipped'][]="Satır $ln: Telefon başka kayıtta ($phn)."; continue; }
                                 $blk=null;
                                 if($hasBlocks){ $braw=$cBlock!==null?$v($cBlock):''; $bid=$bmap[$norm($braw)]??null; if(!$bid){ $importReport['skipped'][]="Satır $ln: Blok bulunamadı ($braw)."; continue; } $blk=$bid; }
                                 if($maxR>0&&$cur>=$maxR){ $importReport['skipped'][]="Satır $ln: Daire sakini sınırı doldu."; continue; }
@@ -137,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 try{
                                     $pdo->prepare("INSERT INTO users (username,password,role,name,site_id,block_id,floor,apartment_no,address,phone,email,notes) VALUES (?,?,'resident',?,?,?,?,?,?,?,?,?)")
                                         ->execute([$un,password_hash($pw,PASSWORD_BCRYPT),$nm,$mySiteId,$blk,$fl,$ap,$v($cAddr),$v($cPhone),$v($cMail),$v($cNote)]);
-                                    $cur++; $seenUsernames[]=$un; $importReport['added']++;
+                                    $cur++; $seenUsernames[]=$un; $seenPhones[]=substr($phnD,-10); $importReport['added']++;
                                     if(($cPass===null||$v($cPass)==='')&&$un) $importReport['gen'][$un]=$pw;
                                 }catch(PDOException $ex){ $importReport['skipped'][]="Satır $ln: Kayıt hatası."; }
                             }
@@ -988,7 +1015,7 @@ $hasDebt=count(array_filter($rDues,fn($d)=>!$d['paid']))>0; ?>
   <?php if($siteBlocks): ?><div class="col-md-6"><label class="form-label">Blok *</label><select name="block_id" class="form-control" required><option value="">Seçin</option><?php foreach($siteBlocks as $b): ?><option value="<?=$b['id']?>"><?=htmlspecialchars($b['name'])?></option><?php endforeach; ?></select></div><?php endif; ?>
   <div class="col-4"><label class="form-label">Kat *</label><input type="text" name="floor" class="form-control" required></div>
   <div class="col-4"><label class="form-label">Daire No *</label><input type="text" name="apartment_no" class="form-control" required></div>
-  <div class="col-4"><label class="form-label">Telefon</label><input type="text" name="phone" class="form-control"></div>
+  <div class="col-4"><label class="form-label">Telefon *</label><input type="text" name="phone" class="form-control" placeholder="05xx xxx xx xx" required></div>
   <div class="col-md-6"><label class="form-label">E-posta</label><input type="email" name="email" class="form-control"></div>
   <div class="col-md-6"><label class="form-label">Adres</label><input type="text" name="address" class="form-control"></div>
   <div class="col-md-6"><label class="form-label">Kullanıcı Adı *</label><input type="text" name="username" class="form-control" required></div>
