@@ -60,6 +60,15 @@ class IyzicoGateway implements PaymentGatewayInterface {
         $this->apiKey = $_ENV['IYZICO_API_KEY'] ?? getenv('IYZICO_API_KEY') ?: '';
         $this->secretKey = $_ENV['IYZICO_SECRET_KEY'] ?? getenv('IYZICO_SECRET_KEY') ?: '';
         $this->baseUrl = $_ENV['IYZICO_BASE_URL'] ?? 'https://sandbox-api.iyzipay.com';
+        // Admin panelinden girilen merkezi anahtarlar varsa .env'i ezer
+        try {
+            $s = $pdo->prepare("SELECT k, v FROM landing_settings WHERE k IN ('iyzico_central_api','iyzico_central_secret','iyzico_central_base')");
+            $s->execute();
+            $cfg = $s->fetchAll(PDO::FETCH_KEY_PAIR);
+            if (!empty(trim($cfg['iyzico_central_api'] ?? ''))) $this->apiKey = trim($cfg['iyzico_central_api']);
+            if (!empty(trim($cfg['iyzico_central_secret'] ?? ''))) $this->secretKey = trim($cfg['iyzico_central_secret']);
+            if (!empty(trim($cfg['iyzico_central_base'] ?? ''))) $this->baseUrl = trim($cfg['iyzico_central_base']);
+        } catch (Exception $e) { /* tablo yoksa .env ile devam */ }
         $this->enabled = !empty($this->apiKey) && !empty($this->secretKey);
     }
 
@@ -99,7 +108,7 @@ class IyzicoGateway implements PaymentGatewayInterface {
                 'success' => false,
                 'message' => $this->siteMode
                     ? 'Kartla ödeme şu an aktif değil. Havale / EFT ile ödemeyi tamamlayın.'
-                    : 'Kartla ödeme şu an aktif değil. Yönetici IBAN ile havale yöntemini kullanın. (iyzico için canlı anahtar gerekli – .env güncelleyin)'
+                    : 'Kartla ödeme şu an aktif değil. Havale / EFT ile ödemeyi tamamlayın. (Merkezi iyzico anahtarı admin panelinden tanımlanır)'
             ];
         }
 

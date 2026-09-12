@@ -63,6 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $error = 'Bu siteye bağlı yönetici veya sakin var. Önce onları silin.';
         }
 
+    // Merkezi iyzico (sakin kart ödemeleri bu hesaptan tahsil edilir)
+    } elseif ($action === 'save_central_iyzico') {
+        $ak=trim($_POST['iyzico_central_api']??''); $sk=trim($_POST['iyzico_central_secret']??''); $bu=trim($_POST['iyzico_central_base']??'');
+        $up=function($k,$v) use($pdo){ if($v!=='') $pdo->prepare("INSERT INTO landing_settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)")->execute([$k,$v]); };
+        $up('iyzico_central_api',$ak); $up('iyzico_central_secret',$sk); $up('iyzico_central_base',$bu);
+        $success='Merkezi iyzico ayarları kaydedildi.';
     // Site iyzico Aç/Kapa (merkezi hesap, admin kontrolü)
     } elseif ($action === 'toggle_site_iyzico') {
         $sid = (int)($_POST['site_id'] ?? 0);
@@ -344,6 +350,9 @@ body.sidebar-hidden .main-content {
     <a href="?page=blog" class="nav-link <?= $page==='blog'?'active':'' ?>">
       <i class="fa-solid fa-newspaper"></i> Blog
     </a>
+    <a href="?page=ayarlar" class="nav-link <?= $page==='ayarlar'?'active':'' ?>">
+      <i class="fa-solid fa-sliders"></i> Ayarlar
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -366,8 +375,8 @@ body.sidebar-hidden .main-content {
 
       <span class="topbar-title">
         <?php
-        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler','payments'=>'Ödemeler','leads'=>'Demo Talepleri','landing'=>'Site İçeriği','analytics'=>'Ziyaretçiler','blog'=>'Blog'];
-        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card','payments'=>'money-bill-transfer','leads'=>'envelope-open-text','landing'=>'globe','analytics'=>'chart-line','blog'=>'newspaper'];
+        $titles = ['dashboard'=>'Dashboard','sites'=>'Siteler','managers'=>'Yöneticiler','plans'=>'Paketler','subscriptions'=>'Abonelikler','payments'=>'Ödemeler','leads'=>'Demo Talepleri','landing'=>'Site İçeriği','analytics'=>'Ziyaretçiler','blog'=>'Blog','ayarlar'=>'Ayarlar'];
+        $iconMap = ['sites'=>'building','managers'=>'users-gear','plans'=>'crown','subscriptions'=>'credit-card','payments'=>'money-bill-transfer','leads'=>'envelope-open-text','landing'=>'globe','analytics'=>'chart-line','blog'=>'newspaper','ayarlar'=>'sliders'];
         echo '<i class="fa-solid fa-'. ($iconMap[$page] ?? 'gauge-high'). ' me-2 text-accent"></i>';
         echo $titles[$page] ?? 'Admin';
         ?>
@@ -1006,6 +1015,26 @@ body.sidebar-hidden .main-content {
       <?php if(!$allBlogPosts): ?><tr><td colspan="6" class="text-center py-4 text-muted">Henüz yazı yok</td></tr><?php endif; ?>
     </tbody></table></div></div>
     <div class="modal fade" id="addBlogModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><form method="post"><input type="hidden" name="action" value="blog_add"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"><div class="modal-header"><h5 class="modal-title">Yeni Yazı</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-8"><label class="form-label">Başlık *</label><input type="text" name="title" class="form-control" required></div><div class="col-md-4"><label class="form-label">Kategori</label><select name="category" class="form-select"><option value="aidat">Aidat</option><option value="yonetici">Yönetici</option><option value="yazilim">Yazılım</option><option value="odeme">Ödeme</option></select></div><div class="col-md-8"><label class="form-label">Slug (boşsa otomatik)</label><input type="text" name="slug" class="form-control"></div><div class="col-md-4"><label class="form-label">Yayın</label><div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_published" value="1" checked><label class="form-check-label">Yayında</label></div></div><div class="col-12"><label class="form-label">Özet</label><input type="text" name="excerpt" class="form-control"></div><div class="col-12"><label class="form-label">İçerik (HTML) *</label><textarea name="content" class="form-control" rows="10" required></textarea></div></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button><button type="submit" class="btn btn-primary">Kaydet</button></div></form></div></div></div>
+    <?php endif; ?>
+
+    <?php elseif ($page === 'ayarlar'): ?>
+    <?php require_once 'includes/PaymentGateway.php'; $cenGwSt=new IyzicoGateway($pdo); $cenLive=$cenGwSt->isLive(); ?>
+    <div class="page-header"><div><h1><i class="fa-solid fa-sliders me-2 text-accent"></i>Ayarlar</h1><p>Sistem geneli yapılandırma</p></div></div>
+    <div class="card mb-4"><div class="card-body">
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+        <input type="hidden" name="action" value="save_central_iyzico">
+        <h6 class="fw-700 mb-1"><i class="fa-solid fa-credit-card me-1"></i>Merkezi iyzico Hesabı</h6>
+        <p class="small text-muted">Sakinlerin kartlı ödemeleri bu hesaptan tahsil edilir. Sadece <b>Siteler</b> sayfasında açtığınız sitelerde kart butonu görünür. Anahtarlar boş bırakılırsa eskisi korunur, ekranda gösterilmez. (<a href="https://www.iyzico.com" target="_blank">iyzico paneli → Ayarlar → API Bilgileri</a>)</p>
+        <div class="mb-2"><?php if($cenLive): ?><span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Canlı anahtar tanımlı — kartlı ödeme hazır</span><?php else: ?><span class="badge bg-secondary">Canlı anahtar yok — kartlı ödeme kapalı</span><?php endif; ?></div>
+        <div class="row g-3">
+          <div class="col-md-4"><label class="form-label">API Anahtarı (apiKey)</label><input type="password" name="iyzico_central_api" class="form-control" autocomplete="new-password" placeholder="Değiştirmek için yazın"></div>
+          <div class="col-md-4"><label class="form-label">Gizli Anahtar (secretKey)</label><input type="password" name="iyzico_central_secret" class="form-control" autocomplete="new-password" placeholder="Değiştirmek için yazın"></div>
+          <div class="col-md-4"><label class="form-label">API Adresi</label><input type="text" name="iyzico_central_base" class="form-control" placeholder="https://api.iyzipay.com"></div>
+        </div>
+        <div class="mt-3"><button type="submit" class="btn btn-success"><i class="fa-solid fa-save me-1"></i>Kaydet</button></div>
+      </form>
+    </div></div>
     <?php endif; ?>
 
   </div><!-- /content-body -->
