@@ -89,15 +89,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $penEnabled=(int)($siteData['penalty_enabled']??0); $penRate=$siteData['penalty_rate']??5; $penGrace=(int)($siteData['penalty_grace_days']??5);
                 $success='Site ayarları kaydedildi.';
             } else $error='Site adı boş olamaz.';
-        } elseif ($a === 'save_site_iyzico') {
-            $en=!empty($_POST['iyzico_enabled'])?1:0;
-            $ak=trim($_POST['iyzico_api_key']??''); $sk=trim($_POST['iyzico_secret_key']??'');
-            if($ak!=='') $pdo->prepare("UPDATE sites SET iyzico_api_key=? WHERE id=?")->execute([$ak,$mySiteId]);
-            if($sk!=='') $pdo->prepare("UPDATE sites SET iyzico_secret_key=? WHERE id=?")->execute([$sk,$mySiteId]);
-            if(isset($_POST['clear_iyzico_keys'])) $pdo->prepare("UPDATE sites SET iyzico_api_key=NULL, iyzico_secret_key=NULL, iyzico_enabled=0 WHERE id=?")->execute([$mySiteId]);
-            else $pdo->prepare("UPDATE sites SET iyzico_enabled=? WHERE id=?")->execute([$en,$mySiteId]);
-            $siteStmt->execute([$mySiteId]); $siteData=$siteStmt->fetch(PDO::FETCH_ASSOC);
-            $success='iyzico ayarları kaydedildi.';
         } elseif ($a === 'edit_block') {
             $bid=(int)($_POST['block_id']??0); $bn=trim($_POST['block_name']??'');
             if($bid&&$bn){ try{ $pdo->prepare("UPDATE blocks SET name=? WHERE id=? AND site_id=?")->execute([$bn,$bid,$mySiteId]); $success='Blok güncellendi.'; }catch(PDOException $e){ $error='Bu blok adı zaten var.'; } }
@@ -671,22 +662,9 @@ document.addEventListener('DOMContentLoaded', function() {
 </div></div>
 
 <div class="card mt-4"><div class="card-body">
-<form method="post">
-<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
-<input type="hidden" name="action" value="save_site_iyzico">
-<h6 class="fw-700 mb-1"><i class="fa-solid fa-credit-card me-1"></i>Sitenin iyzico Hesabı (Kartla Tahsilat)</h6>
-<p class="small text-muted">Sitenize ait iyzico <b>API anahtarı</b> ve <b>gizli anahtarı</b> girin (<a href="https://www.iyzico.com" target="_blank">iyzico paneli → Ayarlar → API Bilgileri</a>). Aktif edince sakinler kartla öder, para <b>doğrudan sitenizin iyzico hesabına</b> düşer. Anahtarlar boş bırakılırsa eskisi korunur, ekranda gösterilmez.</p>
-<div class="mb-2"><?php if($siteIyzHas): ?><span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Anahtarlar tanımlı</span><?php else: ?><span class="badge bg-secondary">Anahtar girilmedi — kartla ödeme kapalı, havale aktif</span><?php endif; ?></div>
-<div class="row g-3">
-  <div class="col-md-5"><label class="form-label">API Anahtarı (apiKey)</label><input type="password" name="iyzico_api_key" class="form-control" autocomplete="new-password" placeholder="Değiştirmek için yazın"></div>
-  <div class="col-md-5"><label class="form-label">Gizli Anahtar (secretKey)</label><input type="password" name="iyzico_secret_key" class="form-control" autocomplete="new-password" placeholder="Değiştirmek için yazın"></div>
-  <div class="col-md-2"><div class="form-check form-switch mt-4"><input class="form-check-input" type="checkbox" name="iyzico_enabled" value="1" <?= $siteIyzEn?'checked':'' ?>><label class="form-check-label">Aktif</label></div></div>
-</div>
-<div class="mt-3 d-flex gap-2 flex-wrap">
-  <button type="submit" class="btn btn-success"><i class="fa-solid fa-save me-1"></i>iyzico'yu Kaydet</button>
-  <button type="submit" name="clear_iyzico_keys" value="1" class="btn btn-outline-danger btn-sm" onclick="return confirm('Site iyzico anahtarları silinsin mi? Kartla ödeme kapanır.')"><i class="fa-solid fa-trash me-1"></i>Anahtarları Sil</button>
-</div>
-</form>
+<h6 class="fw-700 mb-1"><i class="fa-solid fa-credit-card me-1"></i>Kartla Tahsilat (iyzico)</h6>
+<p class="small text-muted mb-2">Kartlı ödeme altyapısı merkezidir; hangi sitede açık olacağına sistem yöneticisi karar verir.</p>
+<?php if($siteIyzEn): ?><span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Kartla ödeme açık — sakinler kartla ödeyebilir</span><?php else: ?><span class="badge bg-secondary">Kartla ödeme kapalı — sadece havale / EFT</span><?php endif; ?>
 </div></div>
 
 <?php elseif($page==='myplan'): ?>

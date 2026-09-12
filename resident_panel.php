@@ -84,7 +84,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'pay_d
     else {
         $pen = calculatePenalty($due, $penaltySettings);
         $total = (float)$due['amount'] + $pen;
-        $gw = getPaymentGateway($pdo, 'iyzico', $mySiteId);
+        $stIyz = $pdo->prepare("SELECT iyzico_enabled FROM sites WHERE id=?"); $stIyz->execute([$mySiteId]);
+        if (!(int)$stIyz->fetchColumn()) { $payError = 'Bu sitede kartla ödeme kapalı. Havale / EFT ile ödeyin.'; }
+        else {
+        $gw = getPaymentGateway($pdo, 'iyzico');
         $res = $gw->createPayment([
             'site_id' => $mySiteId,
             'user_id' => $user['id'],
@@ -95,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'pay_d
         ]);
         if (!empty($res['redirect_url'])) { header('Location: '.$res['redirect_url']); exit; }
         if ($res['success']) $paySuccess = $res['message']; else $payError = $res['message'];
+        }
     }
 }
 
@@ -759,8 +763,10 @@ $darkModeCookie = $_COOKIE['darkMode'] ?? 'light';
                 <?php
                 // Aidat IBAN'ı SİTE'nin kendi IBAN'ı (yönetim hesabı) — sana değil
                 $hasSiteIban = !empty($siteIban);
-                // Kartla ödeme: SADECE site kendi iyzico hesabını tanımladıysa görünür
-                $iyzicoEnabled = IyzicoGateway::forSite($pdo, $mySiteId)->isSiteKeys();
+                // Kartla ödeme: merkezi hesap canlıysa VE admin bu site için açtıysa görünür
+                $cenGw = new IyzicoGateway($pdo);
+                $stIyz2 = $pdo->prepare("SELECT iyzico_enabled FROM sites WHERE id=?"); $stIyz2->execute([$mySiteId]);
+                $iyzicoEnabled = $cenGw->isLive() && (int)$stIyz2->fetchColumn() === 1;
                 ?>
                 <?php if($hasSiteIban): ?>
                 <!-- IBAN Bilgi Kartı - Siteye özel -->

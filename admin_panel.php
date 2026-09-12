@@ -63,6 +63,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $error = 'Bu siteye bağlı yönetici veya sakin var. Önce onları silin.';
         }
 
+    // Site iyzico Aç/Kapa (merkezi hesap, admin kontrolü)
+    } elseif ($action === 'toggle_site_iyzico') {
+        $sid = (int)($_POST['site_id'] ?? 0);
+        if ($sid) {
+            $pdo->prepare("UPDATE sites SET iyzico_enabled=1-iyzico_enabled WHERE id=?")->execute([$sid]);
+            $st = $pdo->prepare("SELECT iyzico_enabled FROM sites WHERE id=?"); $st->execute([$sid]);
+            $success = ((int)$st->fetchColumn() === 1) ? 'Bu sitede kartla ödeme açıldı.' : 'Bu sitede kartla ödeme kapatıldı.';
+        }
+
     // Yönetici Ekle
     } elseif ($action === 'add_manager') {
         $siteId   = (int)($_POST['site_id'] ?? 0);
@@ -505,6 +514,7 @@ body.sidebar-hidden .main-content {
               <th>Site Adı</th>
               <th>Adres</th>
               <th>Sakin</th>
+              <th>iyzico</th>
               <th>Kayıt Tarihi</th>
               <th class="text-end">İşlemler</th>
             </tr>
@@ -520,6 +530,14 @@ body.sidebar-hidden .main-content {
                 </td>
                 <td class="text-muted"><?= htmlspecialchars($s['address'] ?: '-') ?></td>
                 <td><span class="badge badge-resident"><?= $s['resident_count'] ?> kişi</span></td>
+                <td>
+                  <form method="post" style="display:inline" title="Kartla ödemeyi aç/kapat">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                    <input type="hidden" name="action" value="toggle_site_iyzico">
+                    <input type="hidden" name="site_id" value="<?= $s['id'] ?>">
+                    <button class="btn btn-sm <?= !empty($s['iyzico_enabled'])?'btn-success':'btn-outline-secondary' ?>"><i class="fa-solid fa-credit-card me-1"></i><?= !empty($s['iyzico_enabled'])?'Açık':'Kapalı' ?></button>
+                  </form>
+                </td>
                 <td class="text-muted"><?= date_tr($s['created_at']) ?></td>
                 <td class="text-end">
                   <button class="btn btn-sm btn-secondary btn-icon me-1" data-bs-toggle="modal" data-bs-target="#editSiteModal<?= $s['id'] ?>" title="Düzenle">

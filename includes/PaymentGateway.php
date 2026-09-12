@@ -85,6 +85,11 @@ class IyzicoGateway implements PaymentGatewayInterface {
     public function getName(): string { return 'iyzico'; }
     public function isEnabled(): bool { return $this->enabled; }
     public function isSiteKeys(): bool { return $this->siteMode; }
+    // Merkezi hesabın GERÇEK (placeholder olmayan) anahtarları var mı?
+    public function isLive(): bool {
+        if (!$this->enabled) return false;
+        return !($this->apiKey === 'sandbox-api-key' || $this->secretKey === 'sandbox-secret-key');
+    }
 
     public function createPayment(array $data): array {
         // Placeholder anahtar kontrolü
