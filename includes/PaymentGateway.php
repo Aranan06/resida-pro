@@ -2,6 +2,7 @@
 // includes/PaymentGateway.php – Ödeme Soyut Katmanı
 // Manuel (şirketsiz) + iyzico (şirketli) aynı interface üzerinden çalışır
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/Crypto.php';
 
 interface PaymentGatewayInterface {
     /**
@@ -65,8 +66,8 @@ class IyzicoGateway implements PaymentGatewayInterface {
             $s = $pdo->prepare("SELECT k, v FROM landing_settings WHERE k IN ('iyzico_central_api','iyzico_central_secret','iyzico_central_base')");
             $s->execute();
             $cfg = $s->fetchAll(PDO::FETCH_KEY_PAIR);
-            if (!empty(trim($cfg['iyzico_central_api'] ?? ''))) $this->apiKey = trim($cfg['iyzico_central_api']);
-            if (!empty(trim($cfg['iyzico_central_secret'] ?? ''))) $this->secretKey = trim($cfg['iyzico_central_secret']);
+            if (!empty(trim($cfg['iyzico_central_api'] ?? ''))) $this->apiKey = trim(crypto_decrypt($cfg['iyzico_central_api']));
+            if (!empty(trim($cfg['iyzico_central_secret'] ?? ''))) $this->secretKey = trim(crypto_decrypt($cfg['iyzico_central_secret']));
             if (!empty(trim($cfg['iyzico_central_base'] ?? ''))) $this->baseUrl = trim($cfg['iyzico_central_base']);
         } catch (Exception $e) { /* tablo yoksa .env ile devam */ }
         $this->enabled = !empty($this->apiKey) && !empty($this->secretKey);

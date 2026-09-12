@@ -63,11 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $error = 'Bu siteye bağlı yönetici veya sakin var. Önce onları silin.';
         }
 
-    // Merkezi iyzico (sakin kart ödemeleri bu hesaptan tahsil edilir)
+    // Merkezi iyzico (sakin kart ödemeleri bu hesaptan tahsil edilir, şifreli saklanır)
     } elseif ($action === 'save_central_iyzico') {
+        require_once 'includes/Crypto.php';
         $ak=trim($_POST['iyzico_central_api']??''); $sk=trim($_POST['iyzico_central_secret']??''); $bu=trim($_POST['iyzico_central_base']??'');
         $up=function($k,$v) use($pdo){ if($v!=='') $pdo->prepare("INSERT INTO landing_settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)")->execute([$k,$v]); };
-        $up('iyzico_central_api',$ak); $up('iyzico_central_secret',$sk); $up('iyzico_central_base',$bu);
+        $up('iyzico_central_api',crypto_encrypt($ak)); $up('iyzico_central_secret',crypto_encrypt($sk)); $up('iyzico_central_base',$bu);
         $success='Merkezi iyzico ayarları kaydedildi.';
     // Site iyzico Aç/Kapa (merkezi hesap, admin kontrolü)
     } elseif ($action === 'toggle_site_iyzico') {
